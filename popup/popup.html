@@ -64,6 +64,14 @@
         </svg>
         Templates
       </button>
+      <button class="advanced-tab" data-tab="exportimport">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Export/Import
+      </button>
     </div>
 
     <!-- Folders Tab -->
@@ -92,6 +100,47 @@
       </div>
       <div class="template-list" id="templateList">
         <div class="empty-state-small" id="emptyTemplates">No templates yet</div>
+      </div>
+    </div>
+
+    <!-- Export/Import Tab -->
+    <div class="advanced-tab-content" id="exportImportTab">
+      <div class="export-import-section">
+        <div class="export-group">
+          <span class="export-label">Export clips</span>
+          <div class="export-buttons">
+            <button class="btn-export" id="exportJsonBtn">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              JSON
+            </button>
+            <button class="btn-export" id="exportCsvBtn">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              CSV
+            </button>
+          </div>
+        </div>
+        <div class="import-group">
+          <span class="export-label">Import clips</span>
+          <div class="import-area">
+            <button class="btn-import" id="importJsonBtn">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              Import JSON
+            </button>
+            <input type="file" id="importFileInput" accept=".json" style="display:none">
+          </div>
+        </div>
       </div>
     </div>
   </div>

@@ -502,6 +502,55 @@ body::before {
   border-radius: 0 0 6px 6px;
 }
 
+/* Export/Import section */
+.export-import-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.export-group,
+.import-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.export-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #A89070;
+  white-space: nowrap;
+}
+
+.export-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-export,
+.btn-import {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #3E2723;
+  background: #FFF3D6;
+  border: 1px solid #E0D4B8;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-export:hover,
+.btn-import:hover {
+  background: #FFE082;
+  border-color: #F5A623;
+}
+
 /* ===== Search ===== */
 .search-bar {
   position: relative;
@@ -718,9 +767,49 @@ body::before {
   background: #FDECEA;
 }
 
+/* Rich content badge */
+.clip-rich-badge {
+  font-size: 9px;
+  font-weight: 600;
+  color: #E8971E;
+  background: #FFF3D6;
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid #E0D4B8;
+  letter-spacing: 0.3px;
+}
+
+/* Rich paste button */
+.clip-paste-rich {
+  background: none;
+  border: none;
+  color: #CFBFA0;
+  cursor: pointer;
+  padding: 4px 5px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.clip-paste-rich:hover {
+  color: #E8971E;
+  background: #FFF3D6;
+}
+
 /* Copied flash animation */
 .clip-card.copied {
   animation: copiedFlash 0.4s ease;
+}
+
+/* Keyboard navigation selection */
+.clip-card.kb-selected {
+  outline: 2px solid #F5A623;
+  outline-offset: -2px;
+  background: #FFF3D6;
+  border-left-color: #FFD700;
 }
 
 @keyframes copiedFlash {

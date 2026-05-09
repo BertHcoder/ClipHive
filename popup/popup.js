@@ -28,6 +28,13 @@ const cancelTemplateBtn = document.getElementById("cancelTemplateBtn");
 const templateListEl = document.getElementById("templateList");
 const emptyTemplates = document.getElementById("emptyTemplates");
 
+// Export/Import elements
+const exportImportTab = document.getElementById("exportImportTab");
+const exportJsonBtn = document.getElementById("exportJsonBtn");
+const exportCsvBtn = document.getElementById("exportCsvBtn");
+const importJsonBtn = document.getElementById("importJsonBtn");
+const importFileInput = document.getElementById("importFileInput");
+
 let allClips = [];
 let isPaused = false;
 let advancedOpen = false;
@@ -36,11 +43,14 @@ let templates = [];
 let activeFolderId = null; // null = show all clips
 let editingTemplateName = "";
 
+let selectedIndex = -1;
+
 // ===== Init =====
 document.addEventListener("DOMContentLoaded", loadClips);
-searchInput.addEventListener("input", renderClips);
+searchInput.addEventListener("input", () => { selectedIndex = -1; renderClips(); });
 clearAllBtn.addEventListener("click", handleClearAll);
 pauseBtn.addEventListener("click", togglePause);
+document.addEventListener("keydown", handleKeyboardNav);
 
 // Advanced panel events
 advancedBtn.addEventListener("click", toggleAdvancedPanel);
@@ -52,6 +62,10 @@ newFolderInput.addEventListener("keydown", (e) => { if (e.key === "Enter") creat
 addTemplateBtn.addEventListener("click", startNewTemplate);
 saveTemplateBtn.addEventListener("click", saveTemplate);
 cancelTemplateBtn.addEventListener("click", cancelTemplate);
+exportJsonBtn.addEventListener("click", exportAsJson);
+exportCsvBtn.addEventListener("click", exportAsCsv);
+importJsonBtn.addEventListener("click", () => importFileInput.click());
+importFileInput.addEventListener("change", importFromJson);
 
 async function loadClips() {
   const response = await chrome.runtime.sendMessage({ type: "GET_CLIPS" });
@@ -82,6 +96,78 @@ async function togglePause() {
   await chrome.storage.local.set({ paused: isPaused });
   updatePauseUI();
   showToast(isPaused ? "Tracking paused" : "Tracking resumed");
+}
+
+// ===== Keyboard Navigation =====
+function handleKeyboardNav(e) {
+  // Skip if typing in an input/textarea
+  if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") {
+    if (e.key === "Escape") {
+      e.target.blur();
+      e.preventDefault();
+    }
+    return;
+  }
+
+  const cards = Array.from(clipList.querySelectorAll(".clip-card"));
+  if (cards.length === 0) return;
+
+  switch (e.key) {
+    case "ArrowDown":
+    case "j":
+      e.preventDefault();
+      selectedIndex = Math.min(selectedIndex + 1, cards.length - 1);
+      updateSelection(cards);
+      break;
+    case "ArrowUp":
+    case "k":
+      e.preventDefault();
+      selectedIndex = Math.max(selectedIndex - 1, 0);
+      updateSelection(cards);
+      break;
+    case "Enter":
+      e.preventDefault();
+      if (selectedIndex >= 0 && selectedIndex < cards.length) {
+        const card = cards[selectedIndex];
+        const clip = allClips.find((c) => c.id === card.dataset.id);
+        if (clip) copyToClipboard(clip.text, card);
+      }
+      break;
+    case "Delete":
+    case "Backspace":
+      e.preventDefault();
+      if (selectedIndex >= 0 && selectedIndex < cards.length) {
+        const card = cards[selectedIndex];
+        deleteClip(card.dataset.id, card);
+        if (selectedIndex >= cards.length - 1) selectedIndex = cards.length - 2;
+        setTimeout(() => updateSelection(Array.from(clipList.querySelectorAll(".clip-card"))), 250);
+      }
+      break;
+    case "p":
+      if (selectedIndex >= 0 && selectedIndex < cards.length) {
+        e.preventDefault();
+        togglePin(cards[selectedIndex].dataset.id);
+      }
+      break;
+    case "/":
+      e.preventDefault();
+      searchInput.focus();
+      break;
+    case "Escape":
+      e.preventDefault();
+      selectedIndex = -1;
+      updateSelection(cards);
+      break;
+  }
+}
+
+function updateSelection(cards) {
+  cards.forEach((card, i) => {
+    card.classList.toggle("kb-selected", i === selectedIndex);
+  });
+  if (selectedIndex >= 0 && cards[selectedIndex]) {
+    cards[selectedIndex].scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
 }
 
 // ===== Render =====
@@ -158,6 +244,7 @@ function createClipCard(clip) {
       <div class="clip-meta-left">
         <span class="clip-time">${timeAgo(clip.timestamp)}</span>
         ${domain ? `<span class="clip-source">${escapeHtml(domain)}</span>` : ""}
+        ${clip.html ? `<span class="clip-rich-badge" title="Rich text available">HTML</span>` : ""}
       </div>
       <div class="clip-actions">
         ${advancedOpen ? `<button class="clip-folder-assign" title="Move to folder">
@@ -165,12 +252,18 @@ function createClipCard(clip) {
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
           </svg>
         </button>` : ""}
+        ${clip.html ? `<button class="clip-paste-rich" title="Paste as formatted HTML">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 3v12M8 11l4 4 4-4"/>
+            <rect x="4" y="17" width="16" height="4" rx="1" fill="currentColor" opacity="0.2"/>
+          </svg>
+        </button>` : ""}
         <button class="clip-pin${clip.pinned ? " active" : ""}" title="${clip.pinned ? "Unpin" : "Pin"}">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="${clip.pinned ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2">
             <path d="M12 2l2.09 6.26L21 9.27l-5 4.87L17.18 21 12 17.27 6.82 21 8 14.14l-5-4.87 6.91-1.01L12 2z"/>
           </svg>
         </button>
-        <button class="clip-paste" title="Paste into page">
+        <button class="clip-paste" title="Paste as plain text">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
             <rect x="8" y="2" width="8" height="4" rx="1"/>
@@ -196,16 +289,25 @@ function createClipCard(clip) {
     });
   }
 
+  // Rich paste button (paste as formatted HTML)
+  const richPasteBtn = card.querySelector(".clip-paste-rich");
+  if (richPasteBtn) {
+    richPasteBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      pasteToPage(clip.text, clip.html, true);
+    });
+  }
+
   // Pin button
   card.querySelector(".clip-pin").addEventListener("click", (e) => {
     e.stopPropagation();
     togglePin(clip.id);
   });
 
-  // Paste button — inserts text at cursor in the active page
+  // Paste button — inserts text at cursor in the active page (plain text)
   card.querySelector(".clip-paste").addEventListener("click", (e) => {
     e.stopPropagation();
-    pasteToPage(clip.text);
+    pasteToPage(clip.text, clip.html, false);
   });
 
   // Delete button
@@ -229,6 +331,7 @@ function switchAdvancedTab(tabName) {
   advancedTabs.forEach((t) => t.classList.toggle("active", t.dataset.tab === tabName));
   foldersTab.classList.toggle("active", tabName === "folders");
   templatesTab.classList.toggle("active", tabName === "templates");
+  exportImportTab.classList.toggle("active", tabName === "exportimport");
 }
 
 // ===== Folders =====
@@ -419,18 +522,20 @@ function renderTemplates() {
 }
 
 // ===== Actions =====
-async function pasteToPage(text) {
+async function pasteToPage(text, html, useRich = false) {
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab?.id) { showToast("No active tab"); return; }
 
     const response = await chrome.tabs.sendMessage(tab.id, {
       type: "PASTE_TEXT",
-      text: text
+      text: text,
+      html: html || "",
+      useRich: useRich
     });
 
     if (response?.success) {
-      showToast("Pasted!");
+      showToast(useRich ? "Pasted (formatted)!" : "Pasted!");
       setTimeout(() => window.close(), 300);
     } else {
       // No focused element — fall back to copy
@@ -485,6 +590,93 @@ async function handleClearAll() {
   allClips = [];
   renderClips();
   showToast("All clips cleared");
+}
+
+// ===== Export / Import =====
+function exportAsJson() {
+  if (allClips.length === 0) { showToast("No clips to export"); return; }
+  const data = JSON.stringify(allClips, null, 2);
+  downloadFile(data, "cliphive-export.json", "application/json");
+  showToast(`Exported ${allClips.length} clips as JSON`);
+}
+
+function exportAsCsv() {
+  if (allClips.length === 0) { showToast("No clips to export"); return; }
+  const header = "id,text,html,timestamp,sourceUrl,pinned,folderId";
+  const rows = allClips.map((c) => {
+    const fields = [
+      c.id,
+      csvEscape(c.text),
+      csvEscape(c.html || ""),
+      c.timestamp,
+      csvEscape(c.sourceUrl || ""),
+      c.pinned ? "true" : "false",
+      c.folderId || ""
+    ];
+    return fields.join(",");
+  });
+  const csv = [header, ...rows].join("\n");
+  downloadFile(csv, "cliphive-export.csv", "text/csv");
+  showToast(`Exported ${allClips.length} clips as CSV`);
+}
+
+function csvEscape(str) {
+  if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+    return '"' + str.replace(/"/g, '""') + '"';
+  }
+  return str;
+}
+
+function downloadFile(content, filename, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importFromJson(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (event) => {
+    try {
+      const imported = JSON.parse(event.target.result);
+      if (!Array.isArray(imported)) throw new Error("Invalid format");
+
+      // Validate and normalize each clip
+      const valid = imported.filter((c) => c && typeof c.text === "string" && c.text.trim());
+      if (valid.length === 0) { showToast("No valid clips found"); return; }
+
+      // Merge: skip duplicates by text
+      const existingTexts = new Set(allClips.map((c) => c.text));
+      let added = 0;
+      for (const clip of valid) {
+        if (existingTexts.has(clip.text)) continue;
+        allClips.unshift({
+          id: clip.id || crypto.randomUUID(),
+          text: clip.text,
+          html: clip.html || undefined,
+          timestamp: clip.timestamp || Date.now(),
+          sourceUrl: clip.sourceUrl || "",
+          pinned: clip.pinned || false,
+          folderId: clip.folderId || undefined
+        });
+        existingTexts.add(clip.text);
+        added++;
+      }
+
+      await chrome.storage.local.set({ clips: allClips });
+      renderClips();
+      showToast(`Imported ${added} new clips`);
+    } catch {
+      showToast("Invalid JSON file");
+    }
+  };
+  reader.readAsText(file);
+  importFileInput.value = "";
 }
 
 // ===== Toast =====

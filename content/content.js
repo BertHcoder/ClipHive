@@ -36,6 +36,8 @@ document.addEventListener("blur", (e) => {
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg.type !== "PASTE_TEXT") return;
   const text = msg.text;
+  const html = msg.html;
+  const useRich = msg.useRich && html;
   const el = lastFocusedEl;
 
   if (!el) {
@@ -58,7 +60,12 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       sel.removeAllRanges();
       sel.addRange(lastRange);
     }
-    document.execCommand("insertText", false, text);
+    if (useRich) {
+      // Insert HTML content
+      document.execCommand("insertHTML", false, html);
+    } else {
+      document.execCommand("insertText", false, text);
+    }
     sendResponse({ success: true });
     return;
   }
@@ -74,6 +81,20 @@ document.addEventListener("copy", () => {
   const text = selection.toString();
   if (!text || !text.trim()) return;
 
+  // Capture HTML content if available
+  let html = "";
+  if (selection.rangeCount > 0) {
+    const container = document.createElement("div");
+    for (let i = 0; i < selection.rangeCount; i++) {
+      container.appendChild(selection.getRangeAt(i).cloneContents());
+    }
+    const rawHtml = container.innerHTML;
+    // Only store HTML if it differs meaningfully from plain text
+    if (rawHtml && rawHtml !== text && rawHtml.includes("<")) {
+      html = rawHtml;
+    }
+  }
+
   // Store directly in chrome.storage.local (avoids service worker lifecycle issues)
   chrome.storage.local.get(["clips", "paused"]).then(({ clips = [], paused = false }) => {
     if (paused) return;
@@ -83,6 +104,7 @@ document.addEventListener("copy", () => {
     const clip = {
       id: crypto.randomUUID(),
       text: text,
+      html: html || undefined,
       timestamp: Date.now(),
       sourceUrl: location.href
     };
