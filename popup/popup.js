@@ -39,6 +39,9 @@ const exportJsonBtn = document.getElementById("exportJsonBtn");
 const exportCsvBtn = document.getElementById("exportCsvBtn");
 const importJsonBtn = document.getElementById("importJsonBtn");
 const importFileInput = document.getElementById("importFileInput");
+const supportLink = document.getElementById("supportLink");
+
+const BUY_ME_A_COFFEE_URL = "https://www.buymeacoffee.com/DIRTYmasterchief";
 
 const THEME_STORAGE_KEY = "theme";
 const THEMES = new Set(["honey", "forest", "midnight"]);
@@ -84,6 +87,14 @@ exportJsonBtn.addEventListener("click", exportAsJson);
 exportCsvBtn.addEventListener("click", exportAsCsv);
 importJsonBtn.addEventListener("click", () => importFileInput.click());
 importFileInput.addEventListener("change", importFromJson);
+supportLink.addEventListener("click", (e) => {
+  if (BUY_ME_A_COFFEE_URL.includes("your-name")) {
+    e.preventDefault();
+    showToast("Set your Buy Me a Coffee profile URL in popup.js");
+    return;
+  }
+  supportLink.href = BUY_ME_A_COFFEE_URL;
+});
 
 function normalizeTheme(theme) {
   return THEMES.has(theme) ? theme : "honey";

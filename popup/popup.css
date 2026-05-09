@@ -929,8 +929,14 @@ body.settings-only-view .clip-list {
   border-top: 1px solid var(--border);
   background: var(--bg);
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 6px;
   z-index: 1;
+}
+
+.footer-actions {
+  display: flex;
+  justify-content: space-between;
 }
 
 .btn-footer {
@@ -959,6 +965,28 @@ body.settings-only-view .clip-list {
   color: #D32F2F;
   border-color: #EF9A9A;
   background: #FFF5F5;
+}
+
+.footer-support-link {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-faint);
+  text-decoration: none;
+  opacity: 0.78;
+  transition: color 0.15s, opacity 0.15s;
+}
+
+.footer-support-icon {
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.footer-support-link:hover {
+  color: var(--text-muted);
+  opacity: 1;
 }
 
 /* ===== Settings Tab ===== */
