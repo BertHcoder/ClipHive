@@ -43,6 +43,7 @@ let folders = [];
 let templates = [];
 let activeFolderId = null; // null = show all clips
 let editingTemplateName = "";
+let revealedClips = new Set(); // track which sensitive clips have been revealed
 
 const TAB_CONTENT = {
   folders: foldersTab,
@@ -85,7 +86,7 @@ async function loadClips() {
   updatePauseUI();
 
   // Load advanced data
-  const data = await chrome.storage.local.get(["folders", "templates", "addressBarPolling", "autoCopy"]);
+  const data = await chrome.storage.local.get(["folders", "templates", "addressBarPolling", "autoCopy", "sensitiveDetection", "sensitiveExpiry"]);
   folders = data.folders || [];
   templates = data.templates || [];
   renderFolders();
@@ -129,6 +130,23 @@ async function loadClips() {
       renderClips();
     }
     showToast(`History limit: ${maxClips} clips`);
+  });
+
+  // Sensitive content settings
+  const sensitiveToggle = document.getElementById("sensitiveDetectionToggle");
+  sensitiveToggle.checked = data.sensitiveDetection !== false; // default true
+  sensitiveToggle.addEventListener("change", async () => {
+    await chrome.storage.local.set({ sensitiveDetection: sensitiveToggle.checked });
+  });
+
+  const sensitiveExpirySelect = document.getElementById("sensitiveExpirySelect");
+  sensitiveExpirySelect.value = String(data.sensitiveExpiry ?? 5);
+  sensitiveExpirySelect.addEventListener("change", async () => {
+    await chrome.storage.local.set({ sensitiveExpiry: Number(sensitiveExpirySelect.value) });
+  });
+  toggle.checked = data.addressBarPolling === true;
+  toggle.addEventListener("change", async () => {
+    await chrome.storage.local.set({ addressBarPolling: toggle.checked });
   });
 
   // Show the real shortcut assigned to _execute_action
@@ -192,7 +210,10 @@ function handleKeyboardNav(e) {
       if (selectedIndex >= 0 && selectedIndex < cards.length) {
         const card = cards[selectedIndex];
         const clip = allClips.find((c) => c.id === card.dataset.id);
-        if (clip) copyToClipboard(clip.text, card);
+        if (clip) {
+          if (clip.sensitive && !revealedClips.has(clip.id)) break; // don't copy masked
+          copyToClipboard(clip.text, card, clip.sensitive);
+        }
       }
       break;
     case "Delete":
@@ -296,23 +317,45 @@ function createClipCard(clip) {
   card.className = "clip-card";
   card.dataset.id = clip.id;
 
-  const truncated = clip.text.length > 120
-    ? clip.text.slice(0, 120) + "…"
-    : clip.text;
+  const isMasked = clip.sensitive && !revealedClips.has(clip.id);
+  const truncated = isMasked
+    ? "●●●●●●●●●●●●●●●●●●●●"
+    : clip.text.length > 120
+      ? clip.text.slice(0, 120) + "…"
+      : clip.text;
 
   const domain = extractDomain(clip.sourceUrl);
 
   if (clip.pinned) card.classList.add("pinned");
+  if (clip.sensitive) card.classList.add("sensitive");
+
+  // Expiry countdown text
+  let expiryText = "";
+  if (clip.expiresAt) {
+    const remaining = Math.max(0, clip.expiresAt - Date.now());
+    const mins = Math.ceil(remaining / 60000);
+    expiryText = mins > 0 ? `expires in ${mins}m` : "expiring…";
+  }
 
   card.innerHTML = `
-    <div class="clip-text">${escapeHtml(truncated)}</div>
+    <div class="clip-text${isMasked ? " clip-text-masked" : ""}">${escapeHtml(truncated)}</div>
     <div class="clip-meta">
       <div class="clip-meta-left">
         <span class="clip-time">${timeAgo(clip.timestamp)}</span>
         ${domain ? `<span class="clip-source">${escapeHtml(domain)}</span>` : ""}
         ${clip.html ? `<span class="clip-rich-badge" title="Rich text available">HTML</span>` : ""}
+        ${clip.sensitive ? `<span class="clip-sensitive-badge" title="Sensitive content detected">🔒 SENSITIVE</span>` : ""}
+        ${expiryText ? `<span class="clip-expiry-timer" title="Auto-expires">${expiryText}</span>` : ""}
       </div>
       <div class="clip-actions">
+        ${clip.sensitive ? `<button class="clip-reveal-btn" title="${isMasked ? "Reveal" : "Hide"} sensitive content">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            ${isMasked
+              ? `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`
+              : `<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>`
+            }
+          </svg>
+        </button>` : ""}
         ${advancedOpen ? `<button class="clip-action-btn clip-folder-assign" title="Move to folder">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
@@ -340,11 +383,26 @@ function createClipCard(clip) {
     </div>
   `;
 
-  // Click card → re-copy
+  // Click card → re-copy (with warning for sensitive)
   card.addEventListener("click", (e) => {
-    if (e.target.closest(".clip-delete") || e.target.closest(".clip-paste") || e.target.closest(".clip-pin") || e.target.closest(".clip-folder-assign") || e.target.closest(".folder-dropdown")) return;
-    copyToClipboard(clip.text, card);
+    if (e.target.closest(".clip-delete") || e.target.closest(".clip-paste") || e.target.closest(".clip-pin") || e.target.closest(".clip-folder-assign") || e.target.closest(".folder-dropdown") || e.target.closest(".clip-reveal-btn")) return;
+    if (clip.sensitive && isMasked) return; // don't copy masked content
+    copyToClipboard(clip.text, card, clip.sensitive);
   });
+
+  // Reveal/hide toggle for sensitive clips
+  const revealBtn = card.querySelector(".clip-reveal-btn");
+  if (revealBtn) {
+    revealBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (revealedClips.has(clip.id)) {
+        revealedClips.delete(clip.id);
+      } else {
+        revealedClips.add(clip.id);
+      }
+      renderClips();
+    });
+  }
 
   // Folder assign button
   const folderAssignBtn = card.querySelector(".clip-folder-assign");
@@ -615,14 +673,18 @@ async function pasteToPage(text, html, useRich = false) {
   }
 }
 
-async function copyToClipboard(text, cardEl) {
+async function copyToClipboard(text, cardEl, isSensitiveClip = false) {
   try {
     await navigator.clipboard.writeText(text);
     cardEl.classList.remove("copied");
     // Trigger reflow for re-animation
     void cardEl.offsetWidth;
     cardEl.classList.add("copied");
-    showToast("Copied to clipboard!");
+    if (isSensitiveClip) {
+      showToast("⚠ Sensitive content copied — clear clipboard when done", true);
+    } else {
+      showToast("Copied to clipboard!");
+    }
   } catch {
     showToast("Failed to copy");
   }
@@ -747,11 +809,12 @@ function importFromJson(e) {
 
 // ===== Toast =====
 let toastTimer;
-function showToast(message) {
+function showToast(message, isWarning = false) {
   clearTimeout(toastTimer);
   toastEl.textContent = message;
+  toastEl.classList.toggle("warning", isWarning);
   toastEl.classList.add("show");
-  toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1800);
+  toastTimer = setTimeout(() => toastEl.classList.remove("show"), isWarning ? 3000 : 1800);
 }
 
 // ===== Helpers =====

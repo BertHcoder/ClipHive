@@ -10,6 +10,27 @@ chrome.storage.onChanged.addListener((changes, area) => {
   }
 });
 
+// ===== Sensitive content detection =====
+const SENSITIVE_PATTERNS = [
+  /gh[pousr]_[A-Za-z0-9_]{36,}/,
+  /github_pat_[A-Za-z0-9_]{22,}/,
+  /glpat-[A-Za-z0-9\-_]{20,}/,
+  /AKIA[0-9A-Z]{16}/,
+  /npm_[A-Za-z0-9]{36,}/,
+  /xox[bposatr]-[A-Za-z0-9\-]{10,}/,
+  /sk_(?:live|test)_[A-Za-z0-9]{20,}/,
+  /pk_(?:live|test)_[A-Za-z0-9]{20,}/,
+  /eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/,
+  /-----BEGIN (?:RSA |DSA |EC |OPENSSH )?PRIVATE KEY-----/,
+  /(?:api[_-]?key|api[_-]?secret|access[_-]?token|secret[_-]?key|private[_-]?key|auth[_-]?token)\s*[:=]\s*\S{10,}/i,
+  /Bearer\s+[A-Za-z0-9\-._~+\/]{20,}=*/i,
+  /(?:password|pwd)\s*=\s*[^\s;]{8,}/i,
+];
+
+function isSensitive(text) {
+  return SENSITIVE_PATTERNS.some((p) => p.test(text));
+}
+
 // ===== Track last focused editable element =====
 let lastFocusedEl = null;
 let lastSelectionStart = 0;
@@ -109,15 +130,20 @@ document.addEventListener("mouseup", () => {
     }
 
     // Store the clip
-    chrome.storage.local.get("clips").then(({ clips = [] }) => {
+    chrome.storage.local.get(["clips", "sensitiveDetection", "sensitiveExpiry"]).then(({ clips = [], sensitiveDetection = true, sensitiveExpiry = 5 }) => {
       if (clips.length > 0 && clips[0].text === text) return;
+      const sensitive = sensitiveDetection && isSensitive(text);
       const clip = {
         id: crypto.randomUUID(),
         text,
         html: html || undefined,
         timestamp: Date.now(),
-        sourceUrl: location.href
+        sourceUrl: location.href,
+        sensitive: sensitive || undefined
       };
+      if (sensitive && sensitiveExpiry > 0) {
+        clip.expiresAt = Date.now() + sensitiveExpiry * 60 * 1000;
+      }
       clips.unshift(clip);
       if (clips.length > maxClips) clips.length = maxClips;
       chrome.storage.local.set({ clips }).then(() => {
@@ -150,18 +176,24 @@ document.addEventListener("copy", () => {
   }
 
   // Store directly in chrome.storage.local (avoids service worker lifecycle issues)
-  chrome.storage.local.get(["clips", "paused"]).then(({ clips = [], paused = false }) => {
+  chrome.storage.local.get(["clips", "paused", "sensitiveDetection", "sensitiveExpiry"]).then(({ clips = [], paused = false, sensitiveDetection = true, sensitiveExpiry = 5 }) => {
     if (paused) return;
     // Skip exact duplicate of most recent clip
     if (clips.length > 0 && clips[0].text === text) return;
 
+    const sensitive = sensitiveDetection && isSensitive(text);
     const clip = {
       id: crypto.randomUUID(),
       text,
       html: html || undefined,
       timestamp: Date.now(),
-      sourceUrl: location.href
+      sourceUrl: location.href,
+      sensitive: sensitive || undefined
     };
+
+    if (sensitive && sensitiveExpiry > 0) {
+      clip.expiresAt = Date.now() + sensitiveExpiry * 60 * 1000;
+    }
 
     clips.unshift(clip);
     if (clips.length > maxClips) clips.length = maxClips;
