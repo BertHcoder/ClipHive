@@ -65,7 +65,7 @@ We may update this privacy policy occasionally. Updates will be posted here, and
 
 ## Contact
 
-For privacy concerns or questions, please open an issue on our GitHub repository at [https://github.com/your-org/ClipHive](https://github.com/your-org/ClipHive).
+For privacy concerns or questions, please open an issue on our GitHub repository at [https://github.com/DIRTYmasterchief/ClipHive](https://github.com/DIRTYmasterchief/ClipHive).
 
 ## Compliance
 
