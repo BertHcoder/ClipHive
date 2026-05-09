@@ -15,6 +15,7 @@ const advancedPanel = document.getElementById("advancedPanel");
 const advancedTabs = document.querySelectorAll(".advanced-tab");
 const foldersTab = document.getElementById("foldersTab");
 const templatesTab = document.getElementById("templatesTab");
+const settingsTab = document.getElementById("settingsTab");
 const newFolderInput = document.getElementById("newFolderInput");
 const addFolderBtn = document.getElementById("addFolderBtn");
 const folderListEl = document.getElementById("folderList");
@@ -63,11 +64,17 @@ async function loadClips() {
   updatePauseUI();
 
   // Load advanced data
-  const data = await chrome.storage.local.get(["folders", "templates"]);
+  const data = await chrome.storage.local.get(["folders", "templates", "addressBarPolling"]);
   folders = data.folders || [];
   templates = data.templates || [];
   renderFolders();
   renderTemplates();
+
+  const toggle = document.getElementById("addressBarPollingToggle");
+  toggle.checked = data.addressBarPolling === true;
+  toggle.addEventListener("change", async () => {
+    await chrome.storage.local.set({ addressBarPolling: toggle.checked });
+  });
 }
 
 function updatePauseUI() {
@@ -227,8 +234,9 @@ function toggleAdvancedPanel() {
 
 function switchAdvancedTab(tabName) {
   advancedTabs.forEach((t) => t.classList.toggle("active", t.dataset.tab === tabName));
-  foldersTab.classList.toggle("active", tabName === "folders");
-  templatesTab.classList.toggle("active", tabName === "templates");
+  [foldersTab, templatesTab, settingsTab].forEach((el) => {
+    el.classList.toggle("active", el.id === `${tabName}Tab`);
+  });
 }
 
 // ===== Folders =====
