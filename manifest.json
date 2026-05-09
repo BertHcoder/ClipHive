@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "ClipHive",
   "version": "1.0.0",
-  "description": "A clipboard history manager — capture, browse, and re-copy your clips.",
+  "description": "Clipboard history manager that auto-captures, browses, and re-pastes clips, with optional source tracking and expiry.",
   "permissions": [
     "clipboardRead",
     "clipboardWrite",
