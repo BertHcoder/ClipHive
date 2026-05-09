@@ -9,14 +9,49 @@ const pauseIcon = pauseBtn.querySelector(".pause-icon");
 const playIcon = pauseBtn.querySelector(".play-icon");
 const pauseLabel = pauseBtn.querySelector(".pause-label");
 
+// Advanced panel elements
+const advancedBtn = document.getElementById("advancedBtn");
+const advancedPanel = document.getElementById("advancedPanel");
+const advancedTabs = document.querySelectorAll(".advanced-tab");
+const foldersTab = document.getElementById("foldersTab");
+const templatesTab = document.getElementById("templatesTab");
+const newFolderInput = document.getElementById("newFolderInput");
+const addFolderBtn = document.getElementById("addFolderBtn");
+const folderListEl = document.getElementById("folderList");
+const emptyFolders = document.getElementById("emptyFolders");
+const newTemplateName = document.getElementById("newTemplateName");
+const addTemplateBtn = document.getElementById("addTemplateBtn");
+const templateEditor = document.getElementById("templateEditor");
+const templateContent = document.getElementById("templateContent");
+const saveTemplateBtn = document.getElementById("saveTemplateBtn");
+const cancelTemplateBtn = document.getElementById("cancelTemplateBtn");
+const templateListEl = document.getElementById("templateList");
+const emptyTemplates = document.getElementById("emptyTemplates");
+
 let allClips = [];
 let isPaused = false;
+let advancedOpen = false;
+let folders = [];
+let templates = [];
+let activeFolderId = null; // null = show all clips
+let editingTemplateName = "";
 
 // ===== Init =====
 document.addEventListener("DOMContentLoaded", loadClips);
 searchInput.addEventListener("input", renderClips);
 clearAllBtn.addEventListener("click", handleClearAll);
 pauseBtn.addEventListener("click", togglePause);
+
+// Advanced panel events
+advancedBtn.addEventListener("click", toggleAdvancedPanel);
+advancedTabs.forEach((tab) => {
+  tab.addEventListener("click", () => switchAdvancedTab(tab.dataset.tab));
+});
+addFolderBtn.addEventListener("click", createFolder);
+newFolderInput.addEventListener("keydown", (e) => { if (e.key === "Enter") createFolder(); });
+addTemplateBtn.addEventListener("click", startNewTemplate);
+saveTemplateBtn.addEventListener("click", saveTemplate);
+cancelTemplateBtn.addEventListener("click", cancelTemplate);
 
 async function loadClips() {
   const response = await chrome.runtime.sendMessage({ type: "GET_CLIPS" });
@@ -26,6 +61,13 @@ async function loadClips() {
   const { paused = false } = await chrome.storage.local.get("paused");
   isPaused = paused;
   updatePauseUI();
+
+  // Load advanced data
+  const data = await chrome.storage.local.get(["folders", "templates"]);
+  folders = data.folders || [];
+  templates = data.templates || [];
+  renderFolders();
+  renderTemplates();
 }
 
 function updatePauseUI() {
@@ -45,9 +87,14 @@ async function togglePause() {
 // ===== Render =====
 function renderClips() {
   const query = searchInput.value.toLowerCase().trim();
-  const filtered = query
+  let filtered = query
     ? allClips.filter((c) => c.text.toLowerCase().includes(query))
     : allClips;
+
+  // Filter by active folder
+  if (activeFolderId) {
+    filtered = filtered.filter((c) => c.folderId === activeFolderId);
+  }
 
   // Sort: pinned first, then by timestamp descending
   const sorted = [...filtered].sort((a, b) => {
@@ -58,8 +105,25 @@ function renderClips() {
 
   clipCountEl.textContent = `${allClips.length} clip${allClips.length !== 1 ? "s" : ""}`;
 
-  // Clear existing cards (keep emptyState node)
-  clipList.querySelectorAll(".clip-card").forEach((el) => el.remove());
+  // Clear existing cards (keep emptyState node and breadcrumb)
+  clipList.querySelectorAll(".clip-card, .folder-breadcrumb").forEach((el) => el.remove());
+
+  // Show folder breadcrumb if filtering by folder
+  if (activeFolderId) {
+    const folder = folders.find((f) => f.id === activeFolderId);
+    const breadcrumb = document.createElement("div");
+    breadcrumb.className = "folder-breadcrumb";
+    breadcrumb.innerHTML = `
+      <button class="folder-breadcrumb-back">← All Clips</button>
+      <span>/ <span class="folder-breadcrumb-name">${escapeHtml(folder?.name || "")}</span></span>
+    `;
+    breadcrumb.querySelector(".folder-breadcrumb-back").addEventListener("click", () => {
+      activeFolderId = null;
+      renderClips();
+      renderFolders();
+    });
+    clipList.insertBefore(breadcrumb, emptyState);
+  }
 
   if (sorted.length === 0) {
     emptyState.style.display = "flex";
@@ -96,7 +160,12 @@ function createClipCard(clip) {
         ${domain ? `<span class="clip-source">${escapeHtml(domain)}</span>` : ""}
       </div>
       <div class="clip-actions">
-        <button class="clip-pin${clip.pinned ? " active" : ""}" title="${clip.pinned ? "Unpin" : "Pin"}">
+        ${advancedOpen ? `<button class="clip-folder-assign" title="Move to folder">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+        </button>` : ""}
+        <button class="clip-pin${clip.pinned ? " active" : ""}" title="${clip.pinned ? "Unpin" : "Pin"}">>
           <svg viewBox="0 0 24 24" width="14" height="14" fill="${clip.pinned ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2">
             <path d="M12 2l2.09 6.26L21 9.27l-5 4.87L17.18 21 12 17.27 6.82 21 8 14.14l-5-4.87 6.91-1.01L12 2z"/>
           </svg>
@@ -114,9 +183,18 @@ function createClipCard(clip) {
 
   // Click card → re-copy
   card.addEventListener("click", (e) => {
-    if (e.target.closest(".clip-delete") || e.target.closest(".clip-paste") || e.target.closest(".clip-pin")) return;
+    if (e.target.closest(".clip-delete") || e.target.closest(".clip-paste") || e.target.closest(".clip-pin") || e.target.closest(".clip-folder-assign") || e.target.closest(".folder-dropdown")) return;
     copyToClipboard(clip.text, card);
   });
+
+  // Folder assign button
+  const folderAssignBtn = card.querySelector(".clip-folder-assign");
+  if (folderAssignBtn) {
+    folderAssignBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      showFolderDropdown(clip.id, card);
+    });
+  }
 
   // Pin button
   card.querySelector(".clip-pin").addEventListener("click", (e) => {
@@ -137,6 +215,204 @@ function createClipCard(clip) {
   });
 
   return card;
+}
+
+// ===== Advanced Panel =====
+function toggleAdvancedPanel() {
+  advancedOpen = !advancedOpen;
+  advancedPanel.style.display = advancedOpen ? "block" : "none";
+  advancedBtn.classList.toggle("active", advancedOpen);
+  renderClips(); // re-render to show/hide folder assign buttons
+}
+
+function switchAdvancedTab(tabName) {
+  advancedTabs.forEach((t) => t.classList.toggle("active", t.dataset.tab === tabName));
+  foldersTab.classList.toggle("active", tabName === "folders");
+  templatesTab.classList.toggle("active", tabName === "templates");
+}
+
+// ===== Folders =====
+async function createFolder() {
+  const name = newFolderInput.value.trim();
+  if (!name) return;
+  const folder = { id: crypto.randomUUID(), name };
+  folders.push(folder);
+  await chrome.storage.local.set({ folders });
+  newFolderInput.value = "";
+  renderFolders();
+  showToast(`Folder "${name}" created`);
+}
+
+function renderFolders() {
+  folderListEl.querySelectorAll(".folder-item").forEach((el) => el.remove());
+  if (folders.length === 0) {
+    emptyFolders.style.display = "block";
+    return;
+  }
+  emptyFolders.style.display = "none";
+  const fragment = document.createDocumentFragment();
+  for (const folder of folders) {
+    const count = allClips.filter((c) => c.folderId === folder.id).length;
+    const item = document.createElement("div");
+    item.className = "folder-item" + (activeFolderId === folder.id ? " active" : "");
+    item.innerHTML = `
+      <div class="folder-item-left">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+        </svg>
+        <span class="folder-item-name">${escapeHtml(folder.name)}</span>
+        <span class="folder-item-count">${count}</span>
+      </div>
+      <div class="folder-item-actions">
+        <button class="folder-item-delete" title="Delete folder">&times;</button>
+      </div>
+    `;
+    item.addEventListener("click", (e) => {
+      if (e.target.closest(".folder-item-delete")) return;
+      activeFolderId = activeFolderId === folder.id ? null : folder.id;
+      renderClips();
+      renderFolders();
+    });
+    item.querySelector(".folder-item-delete").addEventListener("click", async (e) => {
+      e.stopPropagation();
+      // Unassign clips from this folder
+      allClips.forEach((c) => { if (c.folderId === folder.id) delete c.folderId; });
+      await chrome.storage.local.set({ clips: allClips });
+      folders = folders.filter((f) => f.id !== folder.id);
+      await chrome.storage.local.set({ folders });
+      if (activeFolderId === folder.id) activeFolderId = null;
+      renderFolders();
+      renderClips();
+      showToast(`Folder deleted`);
+    });
+    fragment.appendChild(item);
+  }
+  folderListEl.appendChild(fragment);
+}
+
+function showFolderDropdown(clipId, cardEl) {
+  // Remove any existing dropdown
+  document.querySelectorAll(".folder-dropdown").forEach((el) => el.remove());
+  if (folders.length === 0) {
+    showToast("Create a folder first");
+    return;
+  }
+  const dropdown = document.createElement("div");
+  dropdown.className = "folder-dropdown";
+
+  // "No folder" option
+  const noFolderItem = document.createElement("div");
+  noFolderItem.className = "folder-dropdown-item";
+  noFolderItem.textContent = "— No folder —";
+  noFolderItem.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    const clip = allClips.find((c) => c.id === clipId);
+    if (clip) delete clip.folderId;
+    await chrome.storage.local.set({ clips: allClips });
+    dropdown.remove();
+    renderClips();
+    renderFolders();
+    showToast("Removed from folder");
+  });
+  dropdown.appendChild(noFolderItem);
+
+  for (const folder of folders) {
+    const item = document.createElement("div");
+    item.className = "folder-dropdown-item";
+    item.textContent = folder.name;
+    item.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const clip = allClips.find((c) => c.id === clipId);
+      if (clip) clip.folderId = folder.id;
+      await chrome.storage.local.set({ clips: allClips });
+      dropdown.remove();
+      renderClips();
+      renderFolders();
+      showToast(`Moved to "${folder.name}"`);
+    });
+    dropdown.appendChild(item);
+  }
+  cardEl.appendChild(dropdown);
+  // Close on outside click
+  const closeDropdown = (e) => {
+    if (!dropdown.contains(e.target)) {
+      dropdown.remove();
+      document.removeEventListener("click", closeDropdown);
+    }
+  };
+  setTimeout(() => document.addEventListener("click", closeDropdown), 0);
+}
+
+// ===== Templates =====
+function startNewTemplate() {
+  const name = newTemplateName.value.trim();
+  if (!name) { newTemplateName.focus(); return; }
+  editingTemplateName = name;
+  templateContent.value = "";
+  templateEditor.style.display = "block";
+  templateContent.focus();
+}
+
+async function saveTemplate() {
+  const text = templateContent.value.trim();
+  if (!text || !editingTemplateName) return;
+  const template = {
+    id: crypto.randomUUID(),
+    name: editingTemplateName,
+    text
+  };
+  templates.push(template);
+  await chrome.storage.local.set({ templates });
+  cancelTemplate();
+  newTemplateName.value = "";
+  renderTemplates();
+  showToast(`Template "${template.name}" saved`);
+}
+
+function cancelTemplate() {
+  editingTemplateName = "";
+  templateEditor.style.display = "none";
+  templateContent.value = "";
+}
+
+function renderTemplates() {
+  templateListEl.querySelectorAll(".template-item").forEach((el) => el.remove());
+  if (templates.length === 0) {
+    emptyTemplates.style.display = "block";
+    return;
+  }
+  emptyTemplates.style.display = "none";
+  const fragment = document.createDocumentFragment();
+  for (const tpl of templates) {
+    const preview = tpl.text.length > 60 ? tpl.text.slice(0, 60) + "…" : tpl.text;
+    const item = document.createElement("div");
+    item.className = "template-item";
+    item.innerHTML = `
+      <div class="template-item-left">
+        <span class="template-item-name">${escapeHtml(tpl.name)}</span>
+        <span class="template-item-preview">${escapeHtml(preview)}</span>
+      </div>
+      <div class="template-item-actions">
+        <button class="template-item-delete" title="Delete template">&times;</button>
+      </div>
+    `;
+    // Click template → copy text
+    item.addEventListener("click", (e) => {
+      if (e.target.closest(".template-item-delete")) return;
+      navigator.clipboard.writeText(tpl.text).then(() => {
+        showToast(`Template "${tpl.name}" copied`);
+      });
+    });
+    item.querySelector(".template-item-delete").addEventListener("click", async (e) => {
+      e.stopPropagation();
+      templates = templates.filter((t) => t.id !== tpl.id);
+      await chrome.storage.local.set({ templates });
+      renderTemplates();
+      showToast("Template deleted");
+    });
+    fragment.appendChild(item);
+  }
+  templateListEl.appendChild(fragment);
 }
 
 // ===== Actions =====

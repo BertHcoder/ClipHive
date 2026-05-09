@@ -25,7 +25,16 @@
       </svg>
       <h1 class="header-title">ClipHive</h1>
     </div>
-    <span class="header-count" id="clipCount">0 clips</span>
+    <div class="header-right">
+      <button class="btn-advanced" id="advancedBtn" title="Advanced features">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        Advanced
+      </button>
+      <span class="header-count" id="clipCount">0 clips</span>
+    </div>
   </header>
 
   <!-- Search -->
@@ -35,6 +44,56 @@
       <line x1="16.5" y1="16.5" x2="21" y2="21"/>
     </svg>
     <input type="text" id="searchInput" class="search-input" placeholder="Search clips...">
+  </div>
+
+  <!-- Advanced Panel -->
+  <div class="advanced-panel" id="advancedPanel" style="display: none;">
+    <div class="advanced-tabs">
+      <button class="advanced-tab active" data-tab="folders">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+        </svg>
+        Folders
+      </button>
+      <button class="advanced-tab" data-tab="templates">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+        Templates
+      </button>
+    </div>
+
+    <!-- Folders Tab -->
+    <div class="advanced-tab-content active" id="foldersTab">
+      <div class="advanced-toolbar">
+        <input type="text" id="newFolderInput" class="advanced-input" placeholder="New folder name...">
+        <button class="btn-add" id="addFolderBtn" title="Create folder">+</button>
+      </div>
+      <div class="folder-list" id="folderList">
+        <div class="empty-state-small" id="emptyFolders">No folders yet</div>
+      </div>
+    </div>
+
+    <!-- Templates Tab -->
+    <div class="advanced-tab-content" id="templatesTab">
+      <div class="advanced-toolbar">
+        <input type="text" id="newTemplateName" class="advanced-input" placeholder="Template name...">
+        <button class="btn-add" id="addTemplateBtn" title="Create template">+</button>
+      </div>
+      <div id="templateEditor" style="display: none;">
+        <textarea id="templateContent" class="template-textarea" placeholder="Template text..." rows="3"></textarea>
+        <div class="template-editor-actions">
+          <button class="btn-save-template" id="saveTemplateBtn">Save</button>
+          <button class="btn-cancel-template" id="cancelTemplateBtn">Cancel</button>
+        </div>
+      </div>
+      <div class="template-list" id="templateList">
+        <div class="empty-state-small" id="emptyTemplates">No templates yet</div>
+      </div>
+    </div>
   </div>
 
   <!-- Clip List -->
