@@ -71,7 +71,16 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     case "CLEAR_CLIPS":
       clearClips().then(() => sendResponse({ success: true }));
       return true;
+
+    case "UPDATE_BADGE":
+      updateBadge().then(() => sendResponse({ success: true }));
+      return true;
   }
+});
+
+// Also update badge whenever storage changes (catches content script direct writes)
+chrome.storage.onChanged.addListener((changes) => {
+  if (changes.clips) updateBadge();
 });
 
 // Set badge on install/startup
