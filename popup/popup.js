@@ -36,6 +36,9 @@ const exportCsvBtn = document.getElementById("exportCsvBtn");
 const importJsonBtn = document.getElementById("importJsonBtn");
 const importFileInput = document.getElementById("importFileInput");
 
+const THEME_STORAGE_KEY = "theme";
+const THEMES = new Set(["honey", "forest", "midnight"]);
+
 let allClips = [];
 let isPaused = false;
 let advancedOpen = false;
@@ -77,6 +80,14 @@ exportCsvBtn.addEventListener("click", exportAsCsv);
 importJsonBtn.addEventListener("click", () => importFileInput.click());
 importFileInput.addEventListener("change", importFromJson);
 
+function normalizeTheme(theme) {
+  return THEMES.has(theme) ? theme : "honey";
+}
+
+function applyTheme(theme) {
+  document.body.dataset.theme = normalizeTheme(theme);
+}
+
 async function loadClips() {
   const response = await chrome.runtime.sendMessage({ type: "GET_CLIPS" });
   allClips = response.clips || [];
@@ -87,11 +98,22 @@ async function loadClips() {
   updatePauseUI();
 
   // Load advanced data
-  const data = await chrome.storage.local.get(["folders", "templates", "addressBarPolling", "autoCopy", "sensitiveDetection", "sensitiveExpiry"]);
+  const data = await chrome.storage.local.get(["folders", "templates", "addressBarPolling", "autoCopy", "sensitiveDetection", "sensitiveExpiry", THEME_STORAGE_KEY]);
   folders = data.folders || [];
   templates = data.templates || [];
   renderFolders();
   renderTemplates();
+
+  const themeSelect = document.getElementById("themeSelect");
+  const currentTheme = normalizeTheme(data[THEME_STORAGE_KEY]);
+  applyTheme(currentTheme);
+  themeSelect.value = currentTheme;
+  themeSelect.addEventListener("change", async () => {
+    const nextTheme = normalizeTheme(themeSelect.value);
+    applyTheme(nextTheme);
+    await chrome.storage.local.set({ [THEME_STORAGE_KEY]: nextTheme });
+    showToast(`Theme: ${themeSelect.options[themeSelect.selectedIndex].text}`);
+  });
 
   const autoCopyToggle = document.getElementById("autoCopyToggle");
   autoCopyToggle.checked = data.autoCopy === true;
