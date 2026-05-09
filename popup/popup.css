@@ -698,6 +698,16 @@ body::before {
   background: #FFF3D6;
 }
 
+.clip-secure-toggle.active {
+  color: #D32F2F;
+  background: #FFEBEE;
+}
+
+.clip-secure-toggle:hover {
+  color: #D32F2F;
+  background: #FFEBEE;
+}
+
 .clip-pin.active {
   color: #F5A623;
 }

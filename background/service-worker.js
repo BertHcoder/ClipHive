@@ -103,6 +103,29 @@ async function togglePin(id) {
   }
 }
 
+// Mark/unmark a clip as sensitive and apply configured expiry.
+async function setClipSensitive(id, sensitive) {
+  const clips = await getClips();
+  const clip = clips.find((c) => c.id === id);
+  if (!clip) return false;
+
+  if (sensitive) {
+    clip.sensitive = true;
+    const { sensitiveExpiry = 5 } = await chrome.storage.local.get("sensitiveExpiry");
+    if (sensitiveExpiry > 0) {
+      clip.expiresAt = Date.now() + sensitiveExpiry * 60 * 1000;
+    } else {
+      delete clip.expiresAt;
+    }
+  } else {
+    delete clip.sensitive;
+    delete clip.expiresAt;
+  }
+
+  await chrome.storage.local.set({ clips });
+  return true;
+}
+
 // Clear all clips
 async function clearClips() {
   await chrome.storage.local.set({ clips: [] });
@@ -130,6 +153,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
     case "TOGGLE_PIN":
       togglePin(message.id).then(() => sendResponse({ success: true }));
+      return true;
+
+    case "SET_CLIP_SENSITIVE":
+      setClipSensitive(message.id, message.sensitive !== false).then((success) =>
+        sendResponse({ success })
+      );
       return true;
 
     case "CLEAR_CLIPS":

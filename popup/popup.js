@@ -348,6 +348,12 @@ function createClipCard(clip) {
         ${expiryText ? `<span class="clip-expiry-timer" title="Auto-expires">${expiryText}</span>` : ""}
       </div>
       <div class="clip-actions">
+        <button class="clip-action-btn clip-secure-toggle${clip.sensitive ? " active" : ""}" title="${clip.sensitive ? "Already marked secure" : "Mark as secure"}">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        </button>
         ${clip.sensitive ? `<button class="clip-reveal-btn" title="${isMasked ? "Reveal" : "Hide"} sensitive content">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
             ${isMasked
@@ -385,9 +391,15 @@ function createClipCard(clip) {
 
   // Click card → re-copy (with warning for sensitive)
   card.addEventListener("click", (e) => {
-    if (e.target.closest(".clip-delete") || e.target.closest(".clip-paste") || e.target.closest(".clip-pin") || e.target.closest(".clip-folder-assign") || e.target.closest(".folder-dropdown") || e.target.closest(".clip-reveal-btn")) return;
+    if (e.target.closest(".clip-delete") || e.target.closest(".clip-paste") || e.target.closest(".clip-pin") || e.target.closest(".clip-folder-assign") || e.target.closest(".folder-dropdown") || e.target.closest(".clip-reveal-btn") || e.target.closest(".clip-secure-toggle")) return;
     if (clip.sensitive && isMasked) return; // don't copy masked content
     copyToClipboard(clip.text, card, clip.sensitive);
+  });
+
+  const secureToggleBtn = card.querySelector(".clip-secure-toggle");
+  secureToggleBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    markClipSecure(clip.id);
   });
 
   // Reveal/hide toggle for sensitive clips
@@ -710,6 +722,38 @@ async function togglePin(id) {
   const clip = allClips.find((c) => c.id === id);
   if (clip) clip.pinned = !clip.pinned;
   renderClips();
+}
+
+async function markClipSecure(id) {
+  const clip = allClips.find((c) => c.id === id);
+  if (!clip) return;
+  if (clip.sensitive) {
+    showToast("Already marked secure");
+    return;
+  }
+
+  const response = await chrome.runtime.sendMessage({
+    type: "SET_CLIP_SENSITIVE",
+    id,
+    sensitive: true
+  });
+
+  if (!response?.success) {
+    showToast("Failed to mark secure");
+    return;
+  }
+
+  clip.sensitive = true;
+  const { sensitiveExpiry = 5 } = await chrome.storage.local.get("sensitiveExpiry");
+  if (sensitiveExpiry > 0) {
+    clip.expiresAt = Date.now() + sensitiveExpiry * 60 * 1000;
+  } else {
+    delete clip.expiresAt;
+  }
+
+  revealedClips.delete(id);
+  renderClips();
+  showToast("Clip marked secure");
 }
 
 async function handleClearAll() {
