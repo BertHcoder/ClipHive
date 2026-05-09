@@ -1,8 +1,13 @@
 const MAX_CLIPS = 100;
 
+async function getClips() {
+  const { clips = [] } = await chrome.storage.local.get("clips");
+  return clips;
+}
+
 // Update badge with current clip count
 async function updateBadge() {
-  const { clips = [] } = await chrome.storage.local.get("clips");
+  const clips = await getClips();
   const count = clips.length;
   const text = count === 0 ? "" : count > 99 ? "99+" : String(count);
   chrome.action.setBadgeText({ text });
@@ -12,19 +17,19 @@ async function updateBadge() {
 
 // Save a new clip
 async function saveClip(text, sourceUrl) {
-  if (!text || !text.trim()) return;
+  if (!text?.trim()) return;
 
   const { paused = false } = await chrome.storage.local.get("paused");
   if (paused) return;
 
-  const { clips = [] } = await chrome.storage.local.get("clips");
+  const clips = await getClips();
 
   // Avoid storing exact duplicates back-to-back
   if (clips.length > 0 && clips[0].text === text) return;
 
   const clip = {
     id: crypto.randomUUID(),
-    text: text,
+    text,
     timestamp: Date.now(),
     sourceUrl: sourceUrl || ""
   };
@@ -42,7 +47,7 @@ async function saveClip(text, sourceUrl) {
 
 // Delete a single clip
 async function deleteClip(id) {
-  const { clips = [] } = await chrome.storage.local.get("clips");
+  const clips = await getClips();
   const filtered = clips.filter((c) => c.id !== id);
   await chrome.storage.local.set({ clips: filtered });
   await updateBadge();
@@ -50,7 +55,7 @@ async function deleteClip(id) {
 
 // Toggle pin on a clip
 async function togglePin(id) {
-  const { clips = [] } = await chrome.storage.local.get("clips");
+  const clips = await getClips();
   const clip = clips.find((c) => c.id === id);
   if (clip) {
     clip.pinned = !clip.pinned;

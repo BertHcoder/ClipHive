@@ -6,13 +6,13 @@ let lastSelectionStart = 0;
 let lastSelectionEnd = 0;
 let lastRange = null;
 
+function isEditable(el) {
+  return el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable;
+}
+
 document.addEventListener("focusin", (e) => {
   const el = e.target;
-  if (
-    el.tagName === "INPUT" ||
-    el.tagName === "TEXTAREA" ||
-    el.isContentEditable
-  ) {
+  if (isEditable(el)) {
     lastFocusedEl = el;
   }
 }, true);
@@ -79,7 +79,7 @@ document.addEventListener("copy", () => {
   if (!selection) return;
 
   const text = selection.toString();
-  if (!text || !text.trim()) return;
+  if (!text?.trim()) return;
 
   // Capture HTML content if available
   let html = "";
@@ -103,7 +103,7 @@ document.addEventListener("copy", () => {
 
     const clip = {
       id: crypto.randomUUID(),
-      text: text,
+      text,
       html: html || undefined,
       timestamp: Date.now(),
       sourceUrl: location.href

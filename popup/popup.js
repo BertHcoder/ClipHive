@@ -44,6 +44,13 @@ let templates = [];
 let activeFolderId = null; // null = show all clips
 let editingTemplateName = "";
 
+const TAB_CONTENT = {
+  folders: foldersTab,
+  templates: templatesTab,
+  settings: settingsTab,
+  exportimport: exportImportTab
+};
+
 let selectedIndex = -1;
 
 // ===== Init =====
@@ -192,6 +199,10 @@ function updateSelection(cards) {
 }
 
 // ===== Render =====
+function updateClipCount() {
+  clipCountEl.textContent = `${allClips.length} clip${allClips.length !== 1 ? "s" : ""}`;
+}
+
 function renderClips() {
   const query = searchInput.value.toLowerCase().trim();
   let filtered = query
@@ -210,7 +221,7 @@ function renderClips() {
     return 0;
   });
 
-  clipCountEl.textContent = `${allClips.length} clip${allClips.length !== 1 ? "s" : ""}`;
+  updateClipCount();
 
   // Clear existing cards (keep emptyState node and breadcrumb)
   clipList.querySelectorAll(".clip-card, .folder-breadcrumb").forEach((el) => el.remove());
@@ -268,23 +279,23 @@ function createClipCard(clip) {
         ${clip.html ? `<span class="clip-rich-badge" title="Rich text available">HTML</span>` : ""}
       </div>
       <div class="clip-actions">
-        ${advancedOpen ? `<button class="clip-folder-assign" title="Move to folder">
+        ${advancedOpen ? `<button class="clip-action-btn clip-folder-assign" title="Move to folder">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
           </svg>
         </button>` : ""}
-        ${clip.html ? `<button class="clip-paste-rich" title="Paste as formatted HTML">
+        ${clip.html ? `<button class="clip-action-btn clip-paste-rich" title="Paste as formatted HTML">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 3v12M8 11l4 4 4-4"/>
             <rect x="4" y="17" width="16" height="4" rx="1" fill="currentColor" opacity="0.2"/>
           </svg>
         </button>` : ""}
-        <button class="clip-pin${clip.pinned ? " active" : ""}" title="${clip.pinned ? "Unpin" : "Pin"}">
+        <button class="clip-action-btn clip-pin${clip.pinned ? " active" : ""}" title="${clip.pinned ? "Unpin" : "Pin"}">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="${clip.pinned ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2">
             <path d="M12 2l2.09 6.26L21 9.27l-5 4.87L17.18 21 12 17.27 6.82 21 8 14.14l-5-4.87 6.91-1.01L12 2z"/>
           </svg>
         </button>
-        <button class="clip-paste" title="Paste as plain text">
+        <button class="clip-action-btn clip-paste" title="Paste as plain text">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
             <rect x="8" y="2" width="8" height="4" rx="1"/>
@@ -350,10 +361,9 @@ function toggleAdvancedPanel() {
 
 function switchAdvancedTab(tabName) {
   advancedTabs.forEach((t) => t.classList.toggle("active", t.dataset.tab === tabName));
-  [foldersTab, templatesTab, settingsTab].forEach((el) => {
-    el.classList.toggle("active", el.id === `${tabName}Tab`);
+  Object.entries(TAB_CONTENT).forEach(([key, el]) => {
+    el.classList.toggle("active", key === tabName);
   });
-  exportImportTab.classList.toggle("active", tabName === "exportimport");
 }
 
 // ===== Folders =====
@@ -551,9 +561,9 @@ async function pasteToPage(text, html, useRich = false) {
 
     const response = await chrome.tabs.sendMessage(tab.id, {
       type: "PASTE_TEXT",
-      text: text,
+      text,
       html: html || "",
-      useRich: useRich
+      useRich
     });
 
     if (response?.success) {
@@ -594,7 +604,7 @@ async function deleteClip(id, cardEl) {
 
   setTimeout(() => {
     cardEl.remove();
-    clipCountEl.textContent = `${allClips.length} clip${allClips.length !== 1 ? "s" : ""}`;
+    updateClipCount();
     if (allClips.length === 0) emptyState.style.display = "flex";
   }, 200);
 }

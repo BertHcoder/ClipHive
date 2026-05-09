@@ -447,24 +447,6 @@ body::before {
 }
 
 /* Clip card folder assign button */
-.clip-folder-assign {
-  background: none;
-  border: none;
-  color: #CFBFA0;
-  cursor: pointer;
-  padding: 4px 5px;
-  border-radius: 4px;
-  line-height: 1;
-  transition: color 0.15s, background 0.15s;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-}
-
-.clip-folder-assign:hover {
-  color: #F5A623;
-  background: #FFF3D6;
-}
 
 /* Folder assign dropdown */
 .folder-dropdown {
@@ -702,7 +684,8 @@ body::before {
   flex-shrink: 0;
 }
 
-.clip-pin {
+/* ===== Action Buttons (shared) ===== */
+.clip-action-btn {
   background: none;
   border: none;
   color: #CFBFA0;
@@ -716,7 +699,7 @@ body::before {
   align-items: center;
 }
 
-.clip-pin:hover {
+.clip-action-btn:hover {
   color: #F5A623;
   background: #FFF3D6;
 }
@@ -728,25 +711,6 @@ body::before {
 .clip-card.pinned {
   border-left-color: #FFD700;
   background: #FFFDF5;
-}
-
-.clip-paste {
-  background: none;
-  border: none;
-  color: #CFBFA0;
-  cursor: pointer;
-  padding: 4px 5px;
-  border-radius: 4px;
-  line-height: 1;
-  transition: color 0.15s, background 0.15s;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-}
-
-.clip-paste:hover {
-  color: #F5A623;
-  background: #FFF3D6;
 }
 
 .clip-delete {
@@ -780,23 +744,8 @@ body::before {
 }
 
 /* Rich paste button */
-.clip-paste-rich {
-  background: none;
-  border: none;
-  color: #CFBFA0;
-  cursor: pointer;
-  padding: 4px 5px;
-  border-radius: 4px;
-  line-height: 1;
-  transition: color 0.15s, background 0.15s;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-}
-
 .clip-paste-rich:hover {
   color: #E8971E;
-  background: #FFF3D6;
 }
 
 /* Copied flash animation */
@@ -828,7 +777,7 @@ body::before {
   z-index: 1;
 }
 
-.btn-pause {
+.btn-footer {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -843,31 +792,11 @@ body::before {
   transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
 
-.btn-pause:hover {
-  color: #E8971E;
-  border-color: #F5A623;
-  background: #FFF3D6;
-}
-
+.btn-pause:hover,
 .btn-pause.active {
   color: #E8971E;
   border-color: #F5A623;
   background: #FFF3D6;
-}
-
-.btn-clear {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 14px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #A89070;
-  background: transparent;
-  border: 1px solid #E0D4B8;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
 
 .btn-clear:hover {
