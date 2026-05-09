@@ -332,11 +332,13 @@ function showFolderDropdown(clipId, cardEl) {
     });
     dropdown.appendChild(item);
   }
+  cardEl.style.zIndex = "30";
   cardEl.appendChild(dropdown);
   // Close on outside click
   const closeDropdown = (e) => {
     if (!dropdown.contains(e.target)) {
       dropdown.remove();
+      cardEl.style.zIndex = "";
       document.removeEventListener("click", closeDropdown);
     }
   };

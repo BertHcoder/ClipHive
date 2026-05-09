@@ -463,11 +463,12 @@ body::before {
 .folder-dropdown {
   position: absolute;
   right: 8px;
-  bottom: 100%;
+  top: 100%;
+  margin-top: 2px;
   background: white;
   border: 1px solid #EDE0C0;
   border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   z-index: 20;
   min-width: 120px;
   max-height: 150px;
