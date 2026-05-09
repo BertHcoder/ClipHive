@@ -62,14 +62,28 @@ function createClipCard(clip) {
         <span class="clip-time">${timeAgo(clip.timestamp)}</span>
         ${domain ? `<span class="clip-source">${escapeHtml(domain)}</span>` : ""}
       </div>
-      <button class="clip-delete" title="Delete clip">&times;</button>
+      <div class="clip-actions">
+        <button class="clip-paste" title="Paste into page">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+            <rect x="8" y="2" width="8" height="4" rx="1"/>
+          </svg>
+        </button>
+        <button class="clip-delete" title="Delete clip">&times;</button>
+      </div>
     </div>
   `;
 
   // Click card → re-copy
   card.addEventListener("click", (e) => {
-    if (e.target.closest(".clip-delete")) return;
+    if (e.target.closest(".clip-delete") || e.target.closest(".clip-paste")) return;
     copyToClipboard(clip.text, card);
+  });
+
+  // Paste button — inserts text at cursor in the active page
+  card.querySelector(".clip-paste").addEventListener("click", (e) => {
+    e.stopPropagation();
+    pasteToPage(clip.text);
   });
 
   // Delete button
@@ -82,6 +96,31 @@ function createClipCard(clip) {
 }
 
 // ===== Actions =====
+async function pasteToPage(text) {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) { showToast("No active tab"); return; }
+
+    const response = await chrome.tabs.sendMessage(tab.id, {
+      type: "PASTE_TEXT",
+      text: text
+    });
+
+    if (response?.success) {
+      showToast("Pasted!");
+      setTimeout(() => window.close(), 300);
+    } else {
+      // No focused element — fall back to copy
+      await navigator.clipboard.writeText(text);
+      showToast("Copied (click target first)");
+    }
+  } catch {
+    // Content script not available — fall back to copy
+    await navigator.clipboard.writeText(text);
+    showToast("Copied (paste manually)");
+  }
+}
+
 async function copyToClipboard(text, cardEl) {
   try {
     await navigator.clipboard.writeText(text);

@@ -209,6 +209,32 @@ body::before {
   max-width: 140px;
 }
 
+.clip-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.clip-paste {
+  background: none;
+  border: none;
+  color: #CFBFA0;
+  cursor: pointer;
+  padding: 4px 5px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.clip-paste:hover {
+  color: #F5A623;
+  background: #FFF3D6;
+}
+
 .clip-delete {
   background: none;
   border: none;
