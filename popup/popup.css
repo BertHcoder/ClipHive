@@ -930,3 +930,100 @@ kbd#shortcutKey {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+
+/* ===== Sensitive Content Styles ===== */
+.clip-card.sensitive {
+  border-left-color: #D32F2F;
+  background: #FFF5F5;
+}
+
+.clip-card.sensitive:hover {
+  border-left-color: #E53935;
+  box-shadow: 0 3px 12px rgba(211, 47, 47, 0.15);
+}
+
+.clip-sensitive-badge {
+  font-size: 9px;
+  font-weight: 600;
+  color: #D32F2F;
+  background: #FFEBEE;
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid #FFCDD2;
+  letter-spacing: 0.3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.clip-text-masked {
+  font-family: monospace;
+  color: #9E9E9E;
+  letter-spacing: 1px;
+  user-select: none;
+}
+
+.clip-reveal-btn {
+  background: none;
+  border: none;
+  color: #CFBFA0;
+  cursor: pointer;
+  padding: 4px 5px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.clip-reveal-btn:hover {
+  color: #D32F2F;
+  background: #FFEBEE;
+}
+
+.clip-expiry-timer {
+  font-size: 10px;
+  color: #D32F2F;
+  white-space: nowrap;
+}
+
+/* Settings group label */
+.setting-divider {
+  border-top: 1px solid #EDE0C0;
+  margin: 4px 0;
+}
+
+.setting-group-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #A89070;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 6px 2px 2px;
+}
+
+/* Settings select dropdown */
+.setting-select {
+  padding: 4px 8px;
+  font-size: 12px;
+  border: 1px solid #E0D4B8;
+  border-radius: 6px;
+  background: white;
+  color: #3E2723;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.setting-select:focus {
+  border-color: #F5A623;
+}
+
+/* Warning toast variant */
+.toast.warning {
+  background: #E65100;
+}

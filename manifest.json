@@ -9,7 +9,8 @@
     "storage",
     "activeTab",
     "tabs",
-    "offscreen"
+    "offscreen",
+    "alarms"
   ],
   "action": {
     "default_popup": "popup/popup.html",

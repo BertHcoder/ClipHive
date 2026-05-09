@@ -1,5 +1,26 @@
 const MAX_CLIPS = 100;
 
+// ===== Sensitive content detection =====
+const SENSITIVE_PATTERNS = [
+  /gh[pousr]_[A-Za-z0-9_]{36,}/,                    // GitHub PATs
+  /github_pat_[A-Za-z0-9_]{22,}/,                    // GitHub fine-grained PATs
+  /glpat-[A-Za-z0-9\-_]{20,}/,                       // GitLab PATs
+  /AKIA[0-9A-Z]{16}/,                                // AWS access key IDs
+  /npm_[A-Za-z0-9]{36,}/,                            // npm tokens
+  /xox[bposatr]-[A-Za-z0-9\-]{10,}/,                 // Slack tokens
+  /sk_(?:live|test)_[A-Za-z0-9]{20,}/,               // Stripe secret keys
+  /pk_(?:live|test)_[A-Za-z0-9]{20,}/,               // Stripe publishable keys
+  /eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/, // JWTs
+  /-----BEGIN (?:RSA |DSA |EC |OPENSSH )?PRIVATE KEY-----/,             // SSH/PEM keys
+  /(?:api[_-]?key|api[_-]?secret|access[_-]?token|secret[_-]?key|private[_-]?key|auth[_-]?token)\s*[:=]\s*\S{10,}/i,
+  /Bearer\s+[A-Za-z0-9\-._~+\/]{20,}=*/i,           // Bearer tokens
+  /(?:password|pwd)\s*=\s*[^\s;]{8,}/i,              // Connection string passwords
+];
+
+function isSensitive(text) {
+  return SENSITIVE_PATTERNS.some((p) => p.test(text));
+}
+
 async function getClips() {
   const { clips = [] } = await chrome.storage.local.get("clips");
   return clips;
@@ -27,12 +48,24 @@ async function saveClip(text, sourceUrl) {
   // Avoid storing exact duplicates back-to-back
   if (clips.length > 0 && clips[0].text === text) return;
 
+  const { sensitiveDetection = true } = await chrome.storage.local.get("sensitiveDetection");
+  const sensitive = sensitiveDetection && isSensitive(text);
+
   const clip = {
     id: crypto.randomUUID(),
     text,
     timestamp: Date.now(),
-    sourceUrl: sourceUrl || ""
+    sourceUrl: sourceUrl || "",
+    sensitive: sensitive || undefined
   };
+
+  // Set auto-expiry for sensitive clips
+  if (sensitive) {
+    const { sensitiveExpiry = 5 } = await chrome.storage.local.get("sensitiveExpiry");
+    if (sensitiveExpiry > 0) {
+      clip.expiresAt = Date.now() + sensitiveExpiry * 60 * 1000;
+    }
+  }
 
   clips.unshift(clip);
 
@@ -142,6 +175,25 @@ async function closeOffscreenDocument() {
 }
 
 ensureOffscreenDocument();
+
+// ===== Sensitive clip auto-expiry =====
+async function cleanupExpiredClips() {
+  const clips = await getClips();
+  const now = Date.now();
+  const unexpired = clips.filter((c) => !c.expiresAt || c.expiresAt > now);
+  if (unexpired.length < clips.length) {
+    await chrome.storage.local.set({ clips: unexpired });
+    await updateBadge();
+  }
+}
+
+chrome.alarms.create("sensitive-expiry-cleanup", { periodInMinutes: 1 });
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === "sensitive-expiry-cleanup") {
+    cleanupExpiredClips();
+  }
+});
+cleanupExpiredClips();
 
 // Set badge on install/startup
 updateBadge();
