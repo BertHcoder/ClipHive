@@ -103,6 +103,34 @@ async function loadClips() {
     await chrome.storage.local.set({ addressBarPolling: toggle.checked });
   });
 
+  // Sync & history limit settings (synced across devices)
+  const syncSettings = await chrome.storage.sync.get({ syncEnabled: false, maxClips: 100 });
+
+  const syncToggle = document.getElementById("syncToggle");
+  syncToggle.checked = syncSettings.syncEnabled;
+  syncToggle.addEventListener("change", async () => {
+    await chrome.storage.sync.set({ syncEnabled: syncToggle.checked });
+    showToast(syncToggle.checked ? "Sync enabled" : "Sync disabled");
+  });
+
+  const maxClipsSelect = document.getElementById("maxClipsSelect");
+  maxClipsSelect.value = String(syncSettings.maxClips);
+  maxClipsSelect.addEventListener("change", async () => {
+    const maxClips = parseInt(maxClipsSelect.value, 10);
+    await chrome.storage.sync.set({ maxClips });
+    if (allClips.length > maxClips) {
+      allClips.sort((a, b) => {
+        if (a.pinned && !b.pinned) return -1;
+        if (!a.pinned && b.pinned) return 1;
+        return b.timestamp - a.timestamp;
+      });
+      allClips.length = maxClips;
+      await chrome.storage.local.set({ clips: allClips });
+      renderClips();
+    }
+    showToast(`History limit: ${maxClips} clips`);
+  });
+
   // Show the real shortcut assigned to _execute_action
   const commands = await chrome.commands.getAll();
   const openCmd = commands.find((c) => c.name === "_execute_action");

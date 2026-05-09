@@ -828,6 +828,24 @@ body::before {
   color: #A89070;
 }
 
+/* Settings select dropdown */
+.setting-select {
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #3E2723;
+  background: white;
+  border: 1px solid #E0D4B8;
+  border-radius: 6px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.setting-select:focus {
+  border-color: #F5A623;
+}
+
 /* Shortcut display */
 .shortcut-display {
   display: flex;

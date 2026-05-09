@@ -85,6 +85,29 @@
     <div class="advanced-tab-content" id="settingsTab">
       <div class="setting-row">
         <div class="setting-label">
+          <span>Sync across devices</span>
+          <span class="setting-info" title="Sync your clipboard history across all Chrome browsers where you're signed in. Uses Chrome's built-in sync storage.">ⓘ</span>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="syncToggle">
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">
+          <span>History limit</span>
+          <span class="setting-info" title="Maximum number of clips to keep. Older clips are automatically removed when the limit is reached.">ⓘ</span>
+        </div>
+        <select id="maxClipsSelect" class="setting-select">
+          <option value="25">25 clips</option>
+          <option value="50">50 clips</option>
+          <option value="100">100 clips</option>
+          <option value="200">200 clips</option>
+          <option value="500">500 clips</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">
           <span>Auto copy on select</span>
           <span class="setting-info" title="Automatically copies selected text to the clipboard when you highlight it — no need to press Ctrl+C.">ⓘ</span>
         </div>

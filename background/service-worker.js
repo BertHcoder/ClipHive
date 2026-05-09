@@ -1,4 +1,10 @@
-const MAX_CLIPS = 100;
+const DEFAULT_MAX_CLIPS = 100;
+const SYNC_CHUNK_SIZE = 6000; // bytes per chunk (under 8,192 sync limit)
+let isSyncing = false;
+
+async function getSettings() {
+  return await chrome.storage.sync.get({ syncEnabled: false, maxClips: DEFAULT_MAX_CLIPS });
+}
 
 async function getClips() {
   const { clips = [] } = await chrome.storage.local.get("clips");
@@ -36,9 +42,10 @@ async function saveClip(text, sourceUrl) {
 
   clips.unshift(clip);
 
-  // Cap at MAX_CLIPS
-  if (clips.length > MAX_CLIPS) {
-    clips.length = MAX_CLIPS;
+  // Cap at configured limit
+  const { maxClips } = await getSettings();
+  if (clips.length > maxClips) {
+    clips.length = maxClips;
   }
 
   await chrome.storage.local.set({ clips });
@@ -102,14 +109,124 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 });
 
-// Also update badge whenever storage changes (catches content script direct writes)
-chrome.storage.onChanged.addListener((changes) => {
-  if (changes.clips) updateBadge();
-  if (changes.addressBarPolling) {
-    if (changes.addressBarPolling.newValue) {
-      ensureOffscreenDocument();
-    } else {
-      closeOffscreenDocument();
+// ===== Sync helpers =====
+async function syncClipsToSync(clips) {
+  const { clips_meta = { chunks: 0 } } = await chrome.storage.sync.get("clips_meta");
+  const oldKeys = [];
+  for (let i = 0; i < clips_meta.chunks; i++) oldKeys.push(`clips_chunk_${i}`);
+  if (oldKeys.length > 0) await chrome.storage.sync.remove(oldKeys);
+
+  const chunks = [];
+  let current = [];
+  let size = 2;
+  for (const clip of clips) {
+    const s = JSON.stringify(clip).length + 1;
+    if (size + s > SYNC_CHUNK_SIZE && current.length > 0) {
+      chunks.push(current);
+      current = [];
+      size = 2;
+    }
+    current.push(clip);
+    size += s;
+  }
+  if (current.length > 0) chunks.push(current);
+
+  const data = { clips_meta: { chunks: chunks.length } };
+  for (let i = 0; i < chunks.length; i++) data[`clips_chunk_${i}`] = chunks[i];
+  try {
+    await chrome.storage.sync.set(data);
+  } catch (e) {
+    console.warn("ClipHive: sync write failed", e.message);
+  }
+}
+
+async function loadClipsFromSync() {
+  const { clips_meta = { chunks: 0 } } = await chrome.storage.sync.get("clips_meta");
+  if (clips_meta.chunks === 0) return [];
+  const keys = [];
+  for (let i = 0; i < clips_meta.chunks; i++) keys.push(`clips_chunk_${i}`);
+  const data = await chrome.storage.sync.get(keys);
+  const clips = [];
+  for (let i = 0; i < clips_meta.chunks; i++) {
+    if (data[`clips_chunk_${i}`]) clips.push(...data[`clips_chunk_${i}`]);
+  }
+  return clips;
+}
+
+async function clearSyncChunks() {
+  const { clips_meta = { chunks: 0 } } = await chrome.storage.sync.get("clips_meta");
+  const keys = ["clips_meta"];
+  for (let i = 0; i < clips_meta.chunks; i++) keys.push(`clips_chunk_${i}`);
+  await chrome.storage.sync.remove(keys);
+}
+
+async function mergeFromSync() {
+  if (isSyncing) return;
+  isSyncing = true;
+  try {
+    const { syncEnabled } = await getSettings();
+    if (!syncEnabled) return;
+    const syncClips = await loadClipsFromSync();
+    if (syncClips.length === 0) return;
+
+    const localClips = await getClips();
+    const localIds = new Set(localClips.map((c) => c.id));
+    let merged = [...localClips];
+    for (const clip of syncClips) {
+      if (!localIds.has(clip.id)) merged.push(clip);
+    }
+    merged.sort((a, b) => b.timestamp - a.timestamp);
+    const { maxClips } = await getSettings();
+    if (merged.length > maxClips) merged.length = maxClips;
+
+    await chrome.storage.local.set({ clips: merged });
+    await updateBadge();
+  } finally {
+    isSyncing = false;
+  }
+}
+
+// Update badge & sync whenever storage changes
+chrome.storage.onChanged.addListener(async (changes, area) => {
+  if (area === "local") {
+    if (changes.clips) {
+      updateBadge();
+      if (!isSyncing) {
+        isSyncing = true;
+        try {
+          const { syncEnabled } = await getSettings();
+          if (syncEnabled) await syncClipsToSync(changes.clips.newValue || []);
+        } finally {
+          isSyncing = false;
+        }
+      }
+    }
+    if (changes.addressBarPolling) {
+      if (changes.addressBarPolling.newValue) ensureOffscreenDocument();
+      else closeOffscreenDocument();
+    }
+  }
+  if (area === "sync") {
+    const hasClipChanges = Object.keys(changes).some(
+      (k) => k.startsWith("clips_chunk") || k === "clips_meta"
+    );
+    if (hasClipChanges) mergeFromSync();
+    if (changes.syncEnabled) {
+      if (changes.syncEnabled.newValue) {
+        const clips = await getClips();
+        isSyncing = true;
+        try { await syncClipsToSync(clips); } finally { isSyncing = false; }
+      } else {
+        await clearSyncChunks();
+      }
+    }
+    if (changes.maxClips) {
+      const maxClips = changes.maxClips.newValue || DEFAULT_MAX_CLIPS;
+      const clips = await getClips();
+      if (clips.length > maxClips) {
+        clips.length = maxClips;
+        await chrome.storage.local.set({ clips });
+      }
     }
   }
 });
@@ -145,3 +262,4 @@ ensureOffscreenDocument();
 
 // Set badge on install/startup
 updateBadge();
+mergeFromSync();

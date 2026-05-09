@@ -1,4 +1,14 @@
-const MAX_CLIPS = 100;
+let maxClips = 100;
+
+// Load history limit setting
+chrome.storage.sync.get({ maxClips: 100 }).then(({ maxClips: val }) => {
+  maxClips = val;
+});
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "sync" && changes.maxClips) {
+    maxClips = changes.maxClips.newValue;
+  }
+});
 
 // ===== Track last focused editable element =====
 let lastFocusedEl = null;
@@ -109,7 +119,7 @@ document.addEventListener("mouseup", () => {
         sourceUrl: location.href
       };
       clips.unshift(clip);
-      if (clips.length > MAX_CLIPS) clips.length = MAX_CLIPS;
+      if (clips.length > maxClips) clips.length = maxClips;
       chrome.storage.local.set({ clips }).then(() => {
         chrome.runtime.sendMessage({ type: "UPDATE_BADGE" }).catch(() => {});
       });
@@ -154,7 +164,7 @@ document.addEventListener("copy", () => {
     };
 
     clips.unshift(clip);
-    if (clips.length > MAX_CLIPS) clips.length = MAX_CLIPS;
+    if (clips.length > maxClips) clips.length = maxClips;
 
     chrome.storage.local.set({ clips }).then(() => {
       // Notify background to update badge (fire-and-forget)
