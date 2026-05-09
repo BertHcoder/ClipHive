@@ -165,7 +165,7 @@ function createClipCard(clip) {
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
           </svg>
         </button>` : ""}
-        <button class="clip-pin${clip.pinned ? " active" : ""}" title="${clip.pinned ? "Unpin" : "Pin"}">>
+        <button class="clip-pin${clip.pinned ? " active" : ""}" title="${clip.pinned ? "Unpin" : "Pin"}">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="${clip.pinned ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2">
             <path d="M12 2l2.09 6.26L21 9.27l-5 4.87L17.18 21 12 17.27 6.82 21 8 14.14l-5-4.87 6.91-1.01L12 2z"/>
           </svg>
