@@ -100,5 +100,22 @@ chrome.storage.onChanged.addListener((changes) => {
   if (changes.clips) updateBadge();
 });
 
+// ===== Offscreen document for clipboard polling =====
+async function ensureOffscreenDocument() {
+  const existingContexts = await chrome.runtime.getContexts({
+    contextTypes: ["OFFSCREEN_DOCUMENT"],
+    documentUrls: [chrome.runtime.getURL("offscreen/offscreen.html")]
+  });
+  if (existingContexts.length > 0) return;
+
+  await chrome.offscreen.createDocument({
+    url: "offscreen/offscreen.html",
+    reasons: ["CLIPBOARD"],
+    justification: "Poll clipboard for changes from browser UI (e.g. address bar)"
+  });
+}
+
+ensureOffscreenDocument();
+
 // Set badge on install/startup
 updateBadge();
