@@ -3,33 +3,15 @@ let maxClips = 100;
 // Load history limit setting
 chrome.storage.sync.get({ maxClips: 100 }).then(({ maxClips: val }) => {
   maxClips = val;
+}).catch((err) => {
+  console.warn('[ClipHive] Failed to load maxClips setting:', err.message);
 });
+
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "sync" && changes.maxClips) {
     maxClips = changes.maxClips.newValue;
   }
 });
-
-// ===== Sensitive content detection =====
-const SENSITIVE_PATTERNS = [
-  /gh[pousr]_[A-Za-z0-9_]{36,}/,
-  /github_pat_[A-Za-z0-9_]{22,}/,
-  /glpat-[A-Za-z0-9\-_]{20,}/,
-  /AKIA[0-9A-Z]{16}/,
-  /npm_[A-Za-z0-9]{36,}/,
-  /xox[bposatr]-[A-Za-z0-9\-]{10,}/,
-  /sk_(?:live|test)_[A-Za-z0-9]{20,}/,
-  /pk_(?:live|test)_[A-Za-z0-9]{20,}/,
-  /eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/,
-  /-----BEGIN (?:RSA |DSA |EC |OPENSSH )?PRIVATE KEY-----/,
-  /(?:api[_-]?key|api[_-]?secret|access[_-]?token|secret[_-]?key|private[_-]?key|auth[_-]?token)\s*[:=]\s*\S{10,}/i,
-  /Bearer\s+[A-Za-z0-9\-._~+\/]{20,}=*/i,
-  /(?:password|pwd)\s*=\s*[^\s;]{8,}/i,
-];
-
-function isSensitive(text) {
-  return SENSITIVE_PATTERNS.some((p) => p.test(text));
-}
 
 // ===== Track last focused editable element =====
 let lastFocusedEl = null;
@@ -114,7 +96,9 @@ document.addEventListener("mouseup", () => {
     if (!text?.trim()) return;
 
     // Copy to clipboard
-    navigator.clipboard.writeText(text).catch(() => {});
+    navigator.clipboard.writeText(text).catch((err) => {
+      console.warn('[ClipHive] Clipboard write failed:', err.message);
+    });
 
     // Capture HTML content if available
     let html = "";
@@ -147,7 +131,11 @@ document.addEventListener("mouseup", () => {
       clips.unshift(clip);
       if (clips.length > maxClips) clips.length = maxClips;
       chrome.storage.local.set({ clips }).then(() => {
-        chrome.runtime.sendMessage({ type: "UPDATE_BADGE" }).catch(() => {});
+        chrome.runtime.sendMessage({ type: "UPDATE_BADGE" }).catch((err) => {
+          console.warn('[ClipHive] Badge update failed:', err.message);
+        });
+      }).catch((err) => {
+        console.warn('[ClipHive] Storage write failed:', err.message);
       });
     });
   });
@@ -200,7 +188,11 @@ document.addEventListener("copy", () => {
 
     chrome.storage.local.set({ clips }).then(() => {
       // Notify background to update badge (fire-and-forget)
-      chrome.runtime.sendMessage({ type: "UPDATE_BADGE" }).catch(() => {});
+      chrome.runtime.sendMessage({ type: "UPDATE_BADGE" }).catch((err) => {
+        console.warn('[ClipHive] Badge update failed:', err.message);
+      });
+    }).catch((err) => {
+      console.warn('[ClipHive] Storage write failed:', err.message);
     });
   });
 });

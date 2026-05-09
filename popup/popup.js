@@ -9,9 +9,30 @@ const pauseIcon = pauseBtn.querySelector(".pause-icon");
 const playIcon = pauseBtn.querySelector(".play-icon");
 const pauseLabel = pauseBtn.querySelector(".pause-label");
 
+// ===== Constants =====
+const BUY_ME_A_COFFEE_URL = "https://www.buymeacoffee.com/DIRTYmasterchief";
+const THEME_STORAGE_KEY = "theme";
+const THEMES = new Set(["honey", "forest", "midnight"]);
+
+// UI Timing Constants
+const TOAST_DURATION_NORMAL = 1800; // ms
+const TOAST_DURATION_WARNING = 3000; // ms
+const WINDOW_CLOSE_DELAY = 300; // ms
+const CLIPBOARD_READ_TIMEOUT = 100; // ms
+
+// Clip Display Constants
+const CLIP_TEXT_MAX_LENGTH = 120; // characters to show before truncation
+const EXPIRY_MINS_REMINDER = 60000; // ms to convert to minutes
+
 // Expand button elements
 const expandBtn = document.getElementById("expandBtn");
 let isExpanded = false;
+
+// Time unit constants (for timeAgo function)
+const TIME_JUST_NOW_THRESHOLD = 5; // seconds
+const SECS_PER_MINUTE = 60;
+const MINS_PER_HOUR = 60;
+const HOURS_PER_DAY = 24;
 
 // Advanced panel elements
 const advancedBtn = document.getElementById("advancedBtn");
@@ -40,11 +61,6 @@ const exportCsvBtn = document.getElementById("exportCsvBtn");
 const importJsonBtn = document.getElementById("importJsonBtn");
 const importFileInput = document.getElementById("importFileInput");
 const supportLink = document.getElementById("supportLink");
-
-const BUY_ME_A_COFFEE_URL = "https://www.buymeacoffee.com/DIRTYmasterchief";
-
-const THEME_STORAGE_KEY = "theme";
-const THEMES = new Set(["honey", "forest", "midnight"]);
 
 let allClips = [];
 let isPaused = false;
@@ -375,8 +391,8 @@ function createClipCard(clip) {
   const isMasked = clip.sensitive && !revealedClips.has(clip.id);
   const truncated = isMasked
     ? "●●●●●●●●●●●●●●●●●●●●"
-    : clip.text.length > 120
-      ? clip.text.slice(0, 120) + "…"
+    : clip.text.length > CLIP_TEXT_MAX_LENGTH
+      ? clip.text.slice(0, CLIP_TEXT_MAX_LENGTH) + "…"
       : clip.text;
 
   const domain = extractDomain(clip.sourceUrl);
@@ -388,7 +404,7 @@ function createClipCard(clip) {
   let expiryText = "";
   if (clip.expiresAt) {
     const remaining = Math.max(0, clip.expiresAt - Date.now());
-    const mins = Math.ceil(remaining / 60000);
+    const mins = Math.ceil(remaining / EXPIRY_MINS_REMINDER);
     expiryText = mins > 0 ? `expires in ${mins}m` : "expiring…";
   }
 
@@ -706,6 +722,9 @@ function renderTemplates() {
       if (e.target.closest(".template-item-delete")) return;
       navigator.clipboard.writeText(tpl.text).then(() => {
         showToast(`Template "${tpl.name}" copied`);
+      }).catch((err) => {
+        console.warn('[ClipHive] Clipboard write failed:', err.message);
+        showToast("Failed to copy template");
       });
     });
     item.querySelector(".template-item-delete").addEventListener("click", async (e) => {
@@ -735,15 +754,18 @@ async function pasteToPage(text, html, useRich = false) {
 
     if (response?.success) {
       showToast(useRich ? "Pasted (formatted)!" : "Pasted!");
-      setTimeout(() => window.close(), 300);
+      setTimeout(() => window.close(), WINDOW_CLOSE_DELAY);
     } else {
       // No focused element — fall back to copy
       await navigator.clipboard.writeText(text);
       showToast("Copied (click target first)");
     }
-  } catch {
+  } catch (err) {
+    console.warn('[ClipHive] Paste failed:', err.message);
     // Content script not available — fall back to copy
-    await navigator.clipboard.writeText(text);
+    await navigator.clipboard.writeText(text).catch((clipErr) => {
+      console.warn('[ClipHive] Clipboard write failed:', clipErr.message);
+    });
     showToast("Copied (paste manually)");
   }
 }
@@ -760,7 +782,8 @@ async function copyToClipboard(text, cardEl, isSensitiveClip = false) {
     } else {
       showToast("Copied to clipboard!");
     }
-  } catch {
+  } catch (err) {
+    console.warn('[ClipHive] Clipboard write failed:', err.message);
     showToast("Failed to copy");
   }
 }
@@ -906,7 +929,8 @@ function importFromJson(e) {
       await chrome.storage.local.set({ clips: allClips });
       renderClips();
       showToast(`Imported ${added} new clips`);
-    } catch {
+    } catch (err) {
+      console.warn('[ClipHive] JSON import failed:', err.message);
       showToast("Invalid JSON file");
     }
   };
@@ -921,7 +945,7 @@ function showToast(message, isWarning = false) {
   toastEl.textContent = message;
   toastEl.classList.toggle("warning", isWarning);
   toastEl.classList.add("show");
-  toastTimer = setTimeout(() => toastEl.classList.remove("show"), isWarning ? 3000 : 1800);
+  toastTimer = setTimeout(() => toastEl.classList.remove("show"), isWarning ? TOAST_DURATION_WARNING : TOAST_DURATION_NORMAL);
 }
 
 // ===== Helpers =====
@@ -935,19 +959,20 @@ function extractDomain(url) {
   if (!url) return "";
   try {
     return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
+  } catch (err) {
+    console.warn('[ClipHive] Invalid URL:', err.message);
     return "";
   }
 }
 
 function timeAgo(ts) {
   const seconds = Math.floor((Date.now() - ts) / 1000);
-  if (seconds < 5) return "just now";
-  if (seconds < 60) return `${seconds}s ago`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
+  if (seconds < TIME_JUST_NOW_THRESHOLD) return "just now";
+  if (seconds < SECS_PER_MINUTE) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / SECS_PER_MINUTE);
+  if (minutes < MINS_PER_HOUR) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / MINS_PER_HOUR);
+  if (hours < HOURS_PER_DAY) return `${hours}h ago`;
+  const days = Math.floor(hours / HOURS_PER_DAY);
   return `${days}d ago`;
 }

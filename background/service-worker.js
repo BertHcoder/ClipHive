@@ -1,12 +1,6 @@
+// Constants shared with utils/constants.js; keep in sync
 const DEFAULT_MAX_CLIPS = 100;
 const SYNC_CHUNK_SIZE = 6000; // bytes per chunk (under 8,192 sync limit)
-let isSyncing = false;
-
-async function getSettings() {
-  return await chrome.storage.sync.get({ syncEnabled: false, maxClips: DEFAULT_MAX_CLIPS });
-}
-
-// ===== Sensitive content detection =====
 const SENSITIVE_PATTERNS = [
   /gh[pousr]_[A-Za-z0-9_]{36,}/,                    // GitHub PATs
   /github_pat_[A-Za-z0-9_]{22,}/,                    // GitHub fine-grained PATs
@@ -23,8 +17,19 @@ const SENSITIVE_PATTERNS = [
   /(?:password|pwd)\s*=\s*[^\s;]{8,}/i,              // Connection string passwords
 ];
 
+let isSyncing = false;
+
+/**
+ * Check if text matches sensitive content patterns.
+ * @param {string} text - The text to check
+ * @returns {boolean} True if text matches a sensitive pattern
+ */
 function isSensitive(text) {
   return SENSITIVE_PATTERNS.some((p) => p.test(text));
+}
+
+async function getSettings() {
+  return await chrome.storage.sync.get({ syncEnabled: false, maxClips: DEFAULT_MAX_CLIPS });
 }
 
 async function getClips() {
