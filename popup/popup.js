@@ -4,18 +4,42 @@ const searchInput = document.getElementById("searchInput");
 const clearAllBtn = document.getElementById("clearAll");
 const clipCountEl = document.getElementById("clipCount");
 const toastEl = document.getElementById("toast");
+const pauseBtn = document.getElementById("pauseBtn");
+const pauseIcon = pauseBtn.querySelector(".pause-icon");
+const playIcon = pauseBtn.querySelector(".play-icon");
+const pauseLabel = pauseBtn.querySelector(".pause-label");
 
 let allClips = [];
+let isPaused = false;
 
 // ===== Init =====
 document.addEventListener("DOMContentLoaded", loadClips);
 searchInput.addEventListener("input", renderClips);
 clearAllBtn.addEventListener("click", handleClearAll);
+pauseBtn.addEventListener("click", togglePause);
 
 async function loadClips() {
   const response = await chrome.runtime.sendMessage({ type: "GET_CLIPS" });
   allClips = response.clips || [];
   renderClips();
+
+  const { paused = false } = await chrome.storage.local.get("paused");
+  isPaused = paused;
+  updatePauseUI();
+}
+
+function updatePauseUI() {
+  pauseIcon.style.display = isPaused ? "none" : "";
+  playIcon.style.display = isPaused ? "" : "none";
+  pauseLabel.textContent = isPaused ? "Resume" : "Pause";
+  pauseBtn.classList.toggle("active", isPaused);
+}
+
+async function togglePause() {
+  isPaused = !isPaused;
+  await chrome.storage.local.set({ paused: isPaused });
+  updatePauseUI();
+  showToast(isPaused ? "Tracking paused" : "Tracking resumed");
 }
 
 // ===== Render =====
@@ -25,12 +49,19 @@ function renderClips() {
     ? allClips.filter((c) => c.text.toLowerCase().includes(query))
     : allClips;
 
+  // Sort: pinned first, then by timestamp descending
+  const sorted = [...filtered].sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    return 0;
+  });
+
   clipCountEl.textContent = `${allClips.length} clip${allClips.length !== 1 ? "s" : ""}`;
 
   // Clear existing cards (keep emptyState node)
   clipList.querySelectorAll(".clip-card").forEach((el) => el.remove());
 
-  if (filtered.length === 0) {
+  if (sorted.length === 0) {
     emptyState.style.display = "flex";
     return;
   }
@@ -38,7 +69,7 @@ function renderClips() {
   emptyState.style.display = "none";
 
   const fragment = document.createDocumentFragment();
-  for (const clip of filtered) {
+  for (const clip of sorted) {
     fragment.appendChild(createClipCard(clip));
   }
   clipList.appendChild(fragment);
@@ -55,6 +86,8 @@ function createClipCard(clip) {
 
   const domain = extractDomain(clip.sourceUrl);
 
+  if (clip.pinned) card.classList.add("pinned");
+
   card.innerHTML = `
     <div class="clip-text">${escapeHtml(truncated)}</div>
     <div class="clip-meta">
@@ -63,6 +96,11 @@ function createClipCard(clip) {
         ${domain ? `<span class="clip-source">${escapeHtml(domain)}</span>` : ""}
       </div>
       <div class="clip-actions">
+        <button class="clip-pin${clip.pinned ? " active" : ""}" title="${clip.pinned ? "Unpin" : "Pin"}">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="${clip.pinned ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2">
+            <path d="M12 2l2.09 6.26L21 9.27l-5 4.87L17.18 21 12 17.27 6.82 21 8 14.14l-5-4.87 6.91-1.01L12 2z"/>
+          </svg>
+        </button>
         <button class="clip-paste" title="Paste into page">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
@@ -76,8 +114,14 @@ function createClipCard(clip) {
 
   // Click card → re-copy
   card.addEventListener("click", (e) => {
-    if (e.target.closest(".clip-delete") || e.target.closest(".clip-paste")) return;
+    if (e.target.closest(".clip-delete") || e.target.closest(".clip-paste") || e.target.closest(".clip-pin")) return;
     copyToClipboard(clip.text, card);
+  });
+
+  // Pin button
+  card.querySelector(".clip-pin").addEventListener("click", (e) => {
+    e.stopPropagation();
+    togglePin(clip.id);
   });
 
   // Paste button — inserts text at cursor in the active page
@@ -147,6 +191,13 @@ async function deleteClip(id, cardEl) {
     clipCountEl.textContent = `${allClips.length} clip${allClips.length !== 1 ? "s" : ""}`;
     if (allClips.length === 0) emptyState.style.display = "flex";
   }, 200);
+}
+
+async function togglePin(id) {
+  await chrome.runtime.sendMessage({ type: "TOGGLE_PIN", id });
+  const clip = allClips.find((c) => c.id === id);
+  if (clip) clip.pinned = !clip.pinned;
+  renderClips();
 }
 
 async function handleClearAll() {

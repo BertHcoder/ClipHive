@@ -216,6 +216,34 @@ body::before {
   flex-shrink: 0;
 }
 
+.clip-pin {
+  background: none;
+  border: none;
+  color: #CFBFA0;
+  cursor: pointer;
+  padding: 4px 5px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.clip-pin:hover {
+  color: #F5A623;
+  background: #FFF3D6;
+}
+
+.clip-pin.active {
+  color: #F5A623;
+}
+
+.clip-card.pinned {
+  border-left-color: #FFD700;
+  background: #FFFDF5;
+}
+
 .clip-paste {
   background: none;
   border: none;
@@ -270,8 +298,35 @@ body::before {
   border-top: 1px solid #EDE0C0;
   background: #FFF8E1;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   z-index: 1;
+}
+
+.btn-pause {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #A89070;
+  background: transparent;
+  border: 1px solid #E0D4B8;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.btn-pause:hover {
+  color: #E8971E;
+  border-color: #F5A623;
+  background: #FFF3D6;
+}
+
+.btn-pause.active {
+  color: #E8971E;
+  border-color: #F5A623;
+  background: #FFF3D6;
 }
 
 .btn-clear {

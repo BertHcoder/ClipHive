@@ -12,6 +12,9 @@ async function updateBadge() {
 async function saveClip(text, sourceUrl) {
   if (!text || !text.trim()) return;
 
+  const { paused = false } = await chrome.storage.local.get("paused");
+  if (paused) return;
+
   const { clips = [] } = await chrome.storage.local.get("clips");
 
   // Avoid storing exact duplicates back-to-back
@@ -43,6 +46,16 @@ async function deleteClip(id) {
   await updateBadge();
 }
 
+// Toggle pin on a clip
+async function togglePin(id) {
+  const { clips = [] } = await chrome.storage.local.get("clips");
+  const clip = clips.find((c) => c.id === id);
+  if (clip) {
+    clip.pinned = !clip.pinned;
+    await chrome.storage.local.set({ clips });
+  }
+}
+
 // Clear all clips
 async function clearClips() {
   await chrome.storage.local.set({ clips: [] });
@@ -66,6 +79,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
     case "DELETE_CLIP":
       deleteClip(message.id).then(() => sendResponse({ success: true }));
+      return true;
+
+    case "TOGGLE_PIN":
+      togglePin(message.id).then(() => sendResponse({ success: true }));
       return true;
 
     case "CLEAR_CLIPS":

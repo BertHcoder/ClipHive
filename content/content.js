@@ -75,7 +75,8 @@ document.addEventListener("copy", () => {
   if (!text || !text.trim()) return;
 
   // Store directly in chrome.storage.local (avoids service worker lifecycle issues)
-  chrome.storage.local.get("clips").then(({ clips = [] }) => {
+  chrome.storage.local.get(["clips", "paused"]).then(({ clips = [], paused = false }) => {
+    if (paused) return;
     // Skip exact duplicate of most recent clip
     if (clips.length > 0 && clips[0].text === text) return;
 
