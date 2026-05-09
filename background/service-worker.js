@@ -3,9 +3,11 @@ const MAX_CLIPS = 100;
 // Update badge with current clip count
 async function updateBadge() {
   const { clips = [] } = await chrome.storage.local.get("clips");
-  const text = clips.length > 0 ? String(clips.length) : "";
+  const count = clips.length;
+  const text = count === 0 ? "" : count > 99 ? "99+" : String(count);
   chrome.action.setBadgeText({ text });
   chrome.action.setBadgeBackgroundColor({ color: "#F5A623" });
+  chrome.action.setBadgeTextColor({ color: "#FFFFFF" });
 }
 
 // Save a new clip
