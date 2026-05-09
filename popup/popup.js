@@ -275,6 +275,7 @@ function renderFolders() {
     });
     item.querySelector(".folder-item-delete").addEventListener("click", async (e) => {
       e.stopPropagation();
+      if (!confirm(`Delete folder "${folder.name}"?`)) return;
       // Unassign clips from this folder
       allClips.forEach((c) => { if (c.folderId === folder.id) delete c.folderId; });
       await chrome.storage.local.set({ clips: allClips });
