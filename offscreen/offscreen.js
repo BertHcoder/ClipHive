@@ -1,25 +1,22 @@
 // Polls the clipboard for changes and reports new content to the service worker.
 let lastText = "";
+let intervalId = null;
 
 const POLL_INTERVAL = 1500; // ms
 
-function readClipboard() {
-  const textarea = document.getElementById("clipArea");
-  textarea.value = "";
-  textarea.focus();
-  document.execCommand("paste");
-  return textarea.value;
-}
-
-function poll() {
-  const text = readClipboard();
-  if (text && text !== lastText) {
-    lastText = text;
-    chrome.runtime.sendMessage({ type: "NEW_CLIP", text, sourceUrl: "" });
+async function poll() {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (text && text !== lastText) {
+      lastText = text;
+      chrome.runtime.sendMessage({ type: "NEW_CLIP", text, sourceUrl: "" });
+    }
+  } catch {
+    // Clipboard read failed; stop polling
+    clearInterval(intervalId);
   }
 }
 
-// Initial read to seed lastText without saving (avoids re-saving existing clipboard)
-lastText = readClipboard();
-
-setInterval(poll, POLL_INTERVAL);
+// Seed lastText without saving (avoids re-saving existing clipboard on startup)
+navigator.clipboard.readText().then((text) => { lastText = text; }).catch(() => {});
+intervalId = setInterval(poll, POLL_INTERVAL);

@@ -100,10 +100,20 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 // Also update badge whenever storage changes (catches content script direct writes)
 chrome.storage.onChanged.addListener((changes) => {
   if (changes.clips) updateBadge();
+  if (changes.addressBarPolling) {
+    if (changes.addressBarPolling.newValue) {
+      ensureOffscreenDocument();
+    } else {
+      closeOffscreenDocument();
+    }
+  }
 });
 
 // ===== Offscreen document for clipboard polling =====
 async function ensureOffscreenDocument() {
+  const { addressBarPolling = false } = await chrome.storage.local.get("addressBarPolling");
+  if (!addressBarPolling) return;
+
   const existingContexts = await chrome.runtime.getContexts({
     contextTypes: ["OFFSCREEN_DOCUMENT"],
     documentUrls: [chrome.runtime.getURL("offscreen/offscreen.html")]
@@ -115,6 +125,15 @@ async function ensureOffscreenDocument() {
     reasons: ["CLIPBOARD"],
     justification: "Poll clipboard for changes from browser UI (e.g. address bar)"
   });
+}
+
+async function closeOffscreenDocument() {
+  const existingContexts = await chrome.runtime.getContexts({
+    contextTypes: ["OFFSCREEN_DOCUMENT"],
+    documentUrls: [chrome.runtime.getURL("offscreen/offscreen.html")]
+  });
+  if (existingContexts.length === 0) return;
+  await chrome.offscreen.closeDocument();
 }
 
 ensureOffscreenDocument();

@@ -876,7 +876,77 @@ body::before {
   background: #FFF5F5;
 }
 
-/* ===== Toast ===== */
+/* ===== Settings Tab ===== */
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 2px;
+  gap: 12px;
+}
+
+.setting-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #3E2723;
+}
+
+.setting-info {
+  font-size: 13px;
+  color: #CFBFA0;
+  cursor: default;
+  line-height: 1;
+}
+
+.setting-info:hover {
+  color: #A89070;
+}
+
+/* Toggle switch */
+.toggle {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-track {
+  width: 36px;
+  height: 20px;
+  background: #E0D4B8;
+  border-radius: 10px;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+}
+
+.toggle input:checked + .toggle-track {
+  background: #F5A623;
+}
+
+.toggle-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: transform 0.2s;
+}
+
+.toggle input:checked + .toggle-track .toggle-thumb {
+  transform: translateX(16px);
+}
 .toast {
   position: fixed;
   bottom: 60px;
