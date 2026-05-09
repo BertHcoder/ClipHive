@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=380">
+  <link rel="stylesheet" href="popup.css">
+  <title>ClipHive</title>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-brand">
+      <svg class="header-icon" viewBox="0 0 64 64" width="28" height="28">
+        <!-- Honeycomb hexagon -->
+        <polygon points="32,2 58,17 58,47 32,62 6,47 6,17" fill="#F5A623" stroke="#3E2723" stroke-width="3"/>
+        <!-- Bee body -->
+        <ellipse cx="32" cy="32" rx="10" ry="13" fill="#FFD700" stroke="#3E2723" stroke-width="2"/>
+        <!-- Bee stripes -->
+        <line x1="22" y1="28" x2="42" y2="28" stroke="#3E2723" stroke-width="2"/>
+        <line x1="22" y1="33" x2="42" y2="33" stroke="#3E2723" stroke-width="2"/>
+        <line x1="23" y1="38" x2="41" y2="38" stroke="#3E2723" stroke-width="2"/>
+        <!-- Wings -->
+        <ellipse cx="24" cy="23" rx="6" ry="4" fill="rgba(255,255,255,0.6)" stroke="#3E2723" stroke-width="1"/>
+        <ellipse cx="40" cy="23" rx="6" ry="4" fill="rgba(255,255,255,0.6)" stroke="#3E2723" stroke-width="1"/>
+      </svg>
+      <h1 class="header-title">ClipHive</h1>
+    </div>
+    <span class="header-count" id="clipCount">0 clips</span>
+  </header>
+
+  <!-- Search -->
+  <div class="search-bar">
+    <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#9E9E9E" stroke-width="2">
+      <circle cx="11" cy="11" r="7"/>
+      <line x1="16.5" y1="16.5" x2="21" y2="21"/>
+    </svg>
+    <input type="text" id="searchInput" class="search-input" placeholder="Search clips...">
+  </div>
+
+  <!-- Clip List -->
+  <main class="clip-list" id="clipList">
+    <div class="empty-state" id="emptyState">
+      <svg viewBox="0 0 64 64" width="48" height="48" class="empty-icon">
+        <polygon points="32,2 58,17 58,47 32,62 6,47 6,17" fill="none" stroke="#E0C97F" stroke-width="2" stroke-dasharray="4"/>
+      </svg>
+      <p>No clips yet</p>
+      <p class="empty-hint">Copy text on any page to start collecting</p>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <button class="btn-clear" id="clearAll">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="3 6 5 6 21 6"/>
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+      </svg>
+      Clear All
+    </button>
+  </footer>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
