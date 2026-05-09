@@ -85,11 +85,17 @@ async function loadClips() {
   updatePauseUI();
 
   // Load advanced data
-  const data = await chrome.storage.local.get(["folders", "templates", "addressBarPolling"]);
+  const data = await chrome.storage.local.get(["folders", "templates", "addressBarPolling", "autoCopy"]);
   folders = data.folders || [];
   templates = data.templates || [];
   renderFolders();
   renderTemplates();
+
+  const autoCopyToggle = document.getElementById("autoCopyToggle");
+  autoCopyToggle.checked = data.autoCopy === true;
+  autoCopyToggle.addEventListener("change", async () => {
+    await chrome.storage.local.set({ autoCopy: autoCopyToggle.checked });
+  });
 
   const toggle = document.getElementById("addressBarPollingToggle");
   toggle.checked = data.addressBarPolling === true;

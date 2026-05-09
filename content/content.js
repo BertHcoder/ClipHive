@@ -73,6 +73,50 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   sendResponse({ success: false, reason: "not-editable" });
 });
 
+// Auto-copy on text selection (mouseup)
+document.addEventListener("mouseup", () => {
+  chrome.storage.local.get(["autoCopy", "paused"]).then(({ autoCopy = false, paused = false }) => {
+    if (!autoCopy || paused) return;
+    const selection = document.getSelection();
+    if (!selection) return;
+    const text = selection.toString();
+    if (!text?.trim()) return;
+
+    // Copy to clipboard
+    navigator.clipboard.writeText(text).catch(() => {});
+
+    // Capture HTML content if available
+    let html = "";
+    if (selection.rangeCount > 0) {
+      const container = document.createElement("div");
+      for (let i = 0; i < selection.rangeCount; i++) {
+        container.appendChild(selection.getRangeAt(i).cloneContents());
+      }
+      const rawHtml = container.innerHTML;
+      if (rawHtml && rawHtml !== text && rawHtml.includes("<")) {
+        html = rawHtml;
+      }
+    }
+
+    // Store the clip
+    chrome.storage.local.get("clips").then(({ clips = [] }) => {
+      if (clips.length > 0 && clips[0].text === text) return;
+      const clip = {
+        id: crypto.randomUUID(),
+        text,
+        html: html || undefined,
+        timestamp: Date.now(),
+        sourceUrl: location.href
+      };
+      clips.unshift(clip);
+      if (clips.length > MAX_CLIPS) clips.length = MAX_CLIPS;
+      chrome.storage.local.set({ clips }).then(() => {
+        chrome.runtime.sendMessage({ type: "UPDATE_BADGE" }).catch(() => {});
+      });
+    });
+  });
+});
+
 // Listen for copy events on the page and store directly
 document.addEventListener("copy", () => {
   const selection = document.getSelection();
