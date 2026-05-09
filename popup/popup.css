@@ -92,9 +92,11 @@ body::before {
 }
 
 .btn-advanced.active {
-  background: rgba(255, 255, 255, 0.3);
-  color: white;
-  border-color: rgba(255, 255, 255, 0.4);
+  background: white;
+  color: #E8971E;
+  border-color: white;
+  font-weight: 700;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
 }
 
 /* ===== Advanced Panel ===== */
