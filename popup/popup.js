@@ -44,6 +44,7 @@ let templates = [];
 let activeFolderId = null; // null = show all clips
 let editingTemplateName = "";
 let revealedClips = new Set(); // track which sensitive clips have been revealed
+let activeAdvancedTab = "folders";
 
 const TAB_CONTENT = {
   folders: foldersTab,
@@ -460,14 +461,22 @@ function toggleAdvancedPanel() {
   advancedOpen = !advancedOpen;
   advancedPanel.style.display = advancedOpen ? "block" : "none";
   advancedBtn.classList.toggle("active", advancedOpen);
+  updateViewMode();
   renderClips(); // re-render to show/hide folder assign buttons
 }
 
 function switchAdvancedTab(tabName) {
+  activeAdvancedTab = tabName;
   advancedTabs.forEach((t) => t.classList.toggle("active", t.dataset.tab === tabName));
   Object.entries(TAB_CONTENT).forEach(([key, el]) => {
     el.classList.toggle("active", key === tabName);
   });
+  updateViewMode();
+}
+
+function updateViewMode() {
+  const settingsOnlyView = advancedOpen && activeAdvancedTab === "settings";
+  document.body.classList.toggle("settings-only-view", settingsOnlyView);
 }
 
 // ===== Folders =====

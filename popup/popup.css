@@ -144,6 +144,10 @@ body::before {
   display: block;
 }
 
+body.settings-only-view .clip-list {
+  display: none;
+}
+
 .advanced-toolbar {
   display: flex;
   gap: 6px;
