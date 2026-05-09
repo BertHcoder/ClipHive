@@ -9,6 +9,10 @@ const pauseIcon = pauseBtn.querySelector(".pause-icon");
 const playIcon = pauseBtn.querySelector(".play-icon");
 const pauseLabel = pauseBtn.querySelector(".pause-label");
 
+// Expand button elements
+const expandBtn = document.getElementById("expandBtn");
+let isExpanded = false;
+
 // Advanced panel elements
 const advancedBtn = document.getElementById("advancedBtn");
 const advancedPanel = document.getElementById("advancedPanel");
@@ -63,6 +67,7 @@ document.addEventListener("DOMContentLoaded", loadClips);
 searchInput.addEventListener("input", () => { selectedIndex = -1; renderClips(); });
 clearAllBtn.addEventListener("click", handleClearAll);
 pauseBtn.addEventListener("click", togglePause);
+expandBtn.addEventListener("click", toggleExpand);
 document.addEventListener("keydown", handleKeyboardNav);
 
 // Advanced panel events
@@ -96,6 +101,11 @@ async function loadClips() {
   const { paused = false } = await chrome.storage.local.get("paused");
   isPaused = paused;
   updatePauseUI();
+
+  // Load expanded state
+  const { expanded = false } = await chrome.storage.local.get("expanded");
+  isExpanded = expanded;
+  updateExpandUI();
 
   // Load advanced data
   const data = await chrome.storage.local.get(["folders", "templates", "addressBarPolling", "autoCopy", "sensitiveDetection", "sensitiveExpiry", THEME_STORAGE_KEY]);
@@ -199,6 +209,17 @@ async function togglePause() {
   await chrome.storage.local.set({ paused: isPaused });
   updatePauseUI();
   showToast(isPaused ? "Tracking paused" : "Tracking resumed");
+}
+
+function updateExpandUI() {
+  document.body.classList.toggle("expanded", isExpanded);
+  expandBtn.classList.toggle("active", isExpanded);
+}
+
+async function toggleExpand() {
+  isExpanded = !isExpanded;
+  await chrome.storage.local.set({ expanded: isExpanded });
+  updateExpandUI();
 }
 
 // ===== Keyboard Navigation =====
