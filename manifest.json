@@ -8,6 +8,7 @@
     "clipboardWrite",
     "storage",
     "activeTab",
+    "tabs",
     "offscreen"
   ],
   "action": {

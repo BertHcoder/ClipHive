@@ -89,6 +89,20 @@ async function loadClips() {
   toggle.addEventListener("change", async () => {
     await chrome.storage.local.set({ addressBarPolling: toggle.checked });
   });
+
+  // Show the real shortcut assigned to _execute_action
+  const commands = await chrome.commands.getAll();
+  const openCmd = commands.find((c) => c.name === "_execute_action");
+  const shortcutKey = document.getElementById("shortcutKey");
+  if (openCmd && openCmd.shortcut) {
+    shortcutKey.textContent = openCmd.shortcut;
+  } else {
+    shortcutKey.textContent = "Not set";
+  }
+
+  document.getElementById("changeShortcutBtn").addEventListener("click", () => {
+    chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
+  });
 }
 
 function updatePauseUI() {
