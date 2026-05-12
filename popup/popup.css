@@ -887,6 +887,18 @@ body.settings-only-view .clip-list {
   background: #FDECEA;
 }
 
+/* Char/word count badge */
+.clip-count-badge {
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  letter-spacing: 0.2px;
+}
+
 /* Rich content badge */
 .clip-rich-badge {
   font-size: 9px;

@@ -24,6 +24,12 @@ const CLIPBOARD_READ_TIMEOUT = 100; // ms
 const CLIP_TEXT_MAX_LENGTH = 120; // characters to show before truncation
 const EXPIRY_MINS_REMINDER = 60000; // ms to convert to minutes
 
+function countWords(text) {
+  const trimmed = text.trim();
+  if (!trimmed) return 0;
+  return trimmed.split(/\s+/).length;
+}
+
 // Expand button elements
 const expandBtn = document.getElementById("expandBtn");
 let isExpanded = false;
@@ -414,6 +420,7 @@ function createClipCard(clip) {
       <div class="clip-meta-left">
         <span class="clip-time">${timeAgo(clip.timestamp)}</span>
         ${domain ? `<span class="clip-source" title="${escapeHtml(clip.sourceUrl)}">${escapeHtml(domain)}</span>` : ""}
+        <span class="clip-count-badge" title="${clip.text.length} chars, ${countWords(clip.text)} words">${clip.text.length}</span>
         ${clip.html ? `<span class="clip-rich-badge" title="Rich text available">HTML</span>` : ""}
         ${clip.sensitive ? `<span class="clip-sensitive-badge" title="Sensitive content detected">🔒 SENSITIVE</span>` : ""}
         ${expiryText ? `<span class="clip-expiry-timer" title="Auto-expires">${expiryText}</span>` : ""}
