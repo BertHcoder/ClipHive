@@ -413,7 +413,7 @@ function createClipCard(clip) {
     <div class="clip-meta">
       <div class="clip-meta-left">
         <span class="clip-time">${timeAgo(clip.timestamp)}</span>
-        ${domain ? `<span class="clip-source">${escapeHtml(domain)}</span>` : ""}
+        ${domain ? `<span class="clip-source" title="${escapeHtml(clip.sourceUrl)}">${escapeHtml(domain)}</span>` : ""}
         ${clip.html ? `<span class="clip-rich-badge" title="Rich text available">HTML</span>` : ""}
         ${clip.sensitive ? `<span class="clip-sensitive-badge" title="Sensitive content detected">🔒 SENSITIVE</span>` : ""}
         ${expiryText ? `<span class="clip-expiry-timer" title="Auto-expires">${expiryText}</span>` : ""}
