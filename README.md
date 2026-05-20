@@ -38,7 +38,7 @@
 
 **From Chrome Web Store (recommended):**
 
-> [Install ClipHive](https://chromewebstore.google.com/detail/cliphive/TODO-REPLACE-WITH-STORE-ID)
+> [Install ClipHive](https://chromewebstore.google.com/detail/cliphive/oboodmebcbkoghbjhkdicegigbkmnfbl)
 
 **From source (developer):**
 
