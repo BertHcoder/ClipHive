@@ -1,103 +1,104 @@
-# ClipHive
+<p align="center">
+  <img src="icons/icon128.png" alt="ClipHive logo" width="96" />
+</p>
 
-A Chrome Extension (Manifest V3) for clipboard history and quick re-paste.
+<h1 align="center">ClipHive</h1>
 
-ClipHive captures copied text from web pages, keeps a searchable local history, and lets you paste or re-copy clips quickly from the popup.
+<p align="center">
+  <strong>Clipboard history manager for Chrome</strong><br>
+  Auto-captures, organizes, and re-pastes your clips — with privacy-first defaults.
+</p>
+
+<p align="center">
+  <a href="https://chromewebstore.google.com/detail/cliphive/TODO-REPLACE-WITH-STORE-ID">
+    <img src="https://img.shields.io/badge/Chrome%20Web%20Store-Published-blue?logo=googlechrome&logoColor=white" alt="Chrome Web Store" />
+  </a>
+  <img src="https://img.shields.io/badge/Manifest-V3-green" alt="Manifest V3" />
+  <img src="https://img.shields.io/badge/No%20Dependencies-vanilla%20JS-orange" alt="No Dependencies" />
+</p>
+
+---
 
 ## Features
 
-- Clipboard history with badge count and configurable history limit
-- Fast search across captured clips
-- One-click re-copy and paste into focused fields
-- Rich text support (stores optional HTML fragments and can paste formatted content)
-- Pin important clips to keep them at the top
-- Folder organization for clips
-- Reusable text templates
-- Export and import clipboard history (JSON and CSV)
-- Pause/resume clip tracking
-- Auto-copy selected text (optional)
-- Address-bar polling mode for browser-UI clipboard capture (optional)
-- Sensitive content detection (tokens/secrets patterns)
-- Sensitive clip masking and auto-expiry
-- Optional cross-device sync using `chrome.storage.sync`
-- Keyboard shortcut to open popup (`Ctrl+Shift+V` / `Cmd+Shift+V`)
+| Category | Details |
+|----------|---------|
+| **Clipboard History** | Auto-captures copies with badge count, configurable history limit |
+| **Search** | Instant full-text search across all clips |
+| **Re-paste** | One-click re-copy or direct paste into focused fields |
+| **Rich Text** | Stores HTML fragments, pastes formatted content |
+| **Organization** | Pin clips, organize into folders, reusable templates |
+| **Import/Export** | JSON and CSV export/import of full history |
+| **Privacy** | Sensitive content detection (tokens, secrets, API keys), auto-masking, configurable auto-expiry |
+| **Sync** | Optional cross-device sync via `chrome.storage.sync` |
+| **Controls** | Pause/resume tracking, auto-copy selection mode, address-bar polling |
+| **Keyboard** | `Ctrl+Shift+V` / `Cmd+Shift+V` to open |
 
-## Why ClipHive
+## Install
 
-- No framework, no build step, easy to read and modify
-- Uses Chrome extension APIs directly
-- Privacy-first defaults for sensitive content handling
+**From Chrome Web Store (recommended):**
 
-## Installation (Load Unpacked)
+> [Install ClipHive](https://chromewebstore.google.com/detail/cliphive/TODO-REPLACE-WITH-STORE-ID)
 
-1. Clone this repository.
-2. Open Chrome and go to `chrome://extensions`.
-3. Enable **Developer mode**.
-4. Click **Load unpacked**.
-5. Select this repository folder.
+**From source (developer):**
 
-The extension icon should now appear in Chrome.
+1. Clone this repo
+2. Go to `chrome://extensions` → enable **Developer mode**
+3. Click **Load unpacked** → select this folder
 
-## Usage
+## Quick Start
 
-1. Copy text on any web page (`Ctrl+C` / `Cmd+C`).
-2. Open ClipHive from the toolbar icon (or use `Ctrl+Shift+V` / `Cmd+Shift+V`).
-3. Click a clip card to copy it again, or use the paste button to insert into the focused field.
-4. Use **Advanced** for folders, templates, export/import, and settings.
+1. Copy text on any page (`Ctrl+C`)
+2. Click the ClipHive icon or press `Ctrl+Shift+V`
+3. Click a clip to re-copy, or hit paste to insert into the active field
+4. Use **Advanced** for folders, templates, export, and settings
 
-## Development
+## Tech Stack
 
-This project is plain HTML/CSS/JavaScript with no build tooling.
+- **Plain JavaScript, HTML, CSS** — no framework, no build step, no dependencies
+- **Chrome Extension Manifest V3** APIs
+- **Privacy-first**: clips stored locally, sync is opt-in, sensitive content auto-masked
 
-- Edit files directly in place.
-- Reload the extension in `chrome://extensions` after changes.
-- Check service worker logs in the extension details page.
+## Project Structure
 
-### Project Structure
-
-- `manifest.json`: extension metadata, permissions, entry points
-- `background/service-worker.js`: clip storage, badge updates, sync chunking, sensitive expiry, offscreen lifecycle
-- `content/content.js`: page-level copy/select capture and paste back into focused editables
-- `offscreen/offscreen.js`: clipboard polling for browser UI contexts
-- `popup/popup.html`: popup UI structure
-- `popup/popup.js`: popup behavior and user actions
-- `popup/popup.css`: popup styling and themes
-
-## Data Model
-
-A clip object can include:
-
-- `id` (UUID)
-- `text` (plain text)
-- `html` (optional rich fragment)
-- `timestamp` (epoch ms)
-- `sourceUrl` (optional)
-- `pinned` (optional)
-- `sensitive` (optional)
-- `expiresAt` (optional epoch ms)
-- `folderId` (optional)
-
-## Permissions
-
-ClipHive requests:
-
-- `clipboardRead`, `clipboardWrite`: read/write clipboard and support re-paste flows
-- `storage`: local and sync persistence
-- `activeTab`, `tabs`: messaging to active page for paste actions
-- `offscreen`: offscreen document for optional clipboard polling
-- `alarms`: periodic cleanup for expiring sensitive clips
+```
+manifest.json              → Extension config & permissions
+background/service-worker.js → Clip storage, badge, sync, sensitive expiry
+content/content.js         → Page-level copy/select capture & paste-back
+offscreen/offscreen.js     → Clipboard polling for browser UI contexts
+popup/popup.html/js/css    → Popup UI, behavior, and styling
+utils/constants.js         → Shared constants
+```
 
 ## Privacy & Security
 
-- Clipboard clips are stored in `chrome.storage.local` by default.
-- Sync is opt-in and uses `chrome.storage.sync` with chunked writes.
-- Sensitive pattern detection can mark clips as sensitive.
-- Sensitive clips are masked in the UI until revealed.
-- Sensitive clips can auto-expire after a configurable interval.
+- All clips stored in `chrome.storage.local` by default — never leaves your machine unless you enable sync
+- Sync is opt-in and uses chunked writes to respect Chrome quota limits
+- Automatic detection of tokens, API keys, and secrets
+- Sensitive clips are masked in the UI and can auto-expire
+- No analytics, no telemetry, no external network calls
 
-## Known Limitations
+See [PRIVACY_POLICY.md](PRIVACY_POLICY.md) for full details.
 
-- Browser and site restrictions can block scripted paste in some contexts.
+## Contributing
+
+1. Fork & clone
+2. Make changes (no build step — edit and reload)
+3. Test with the [manual test checklist](#manual-testing)
+4. Open a PR
+
+### Manual Testing
+
+- [ ] Copy text on a page → appears in popup
+- [ ] Paste from popup into input/textarea/contenteditable
+- [ ] Toggle sensitive detection → clips are masked
+- [ ] Change history limit → old clips trimmed
+- [ ] Enable/disable sync → no errors during chunk ops
+- [ ] Toggle address-bar polling → offscreen stable
+
+## License
+
+MIT
 - Rich HTML paste is best-effort and depends on editable target behavior.
 - Address-bar polling uses periodic clipboard reads and should stay off unless needed.
 
