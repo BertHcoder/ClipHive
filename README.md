@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://chromewebstore.google.com/detail/cliphive/TODO-REPLACE-WITH-STORE-ID">
+  <a href="https://chromewebstore.google.com/detail/cliphive/oboodmebcbkoghbjhkdicegigbkmnfbl">
     <img src="https://img.shields.io/badge/Chrome%20Web%20Store-Published-blue?logo=googlechrome&logoColor=white" alt="Chrome Web Store" />
   </a>
   <img src="https://img.shields.io/badge/Manifest-V3-green" alt="Manifest V3" />
