@@ -125,3 +125,13 @@ Suggested workflow:
 ## License
 
 Add your preferred license file (for example, MIT) and update this section.
+
+---
+
+## Support
+
+If this saved you time or you just like it, consider buying me a coffee:
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-ffdd00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/dirtymasterchief)
+
+---
