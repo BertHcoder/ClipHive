@@ -141,7 +141,7 @@ async function loadClips() {
   updateExpandUI();
 
   // Load advanced data
-  const data = await chrome.storage.local.get(["folders", "templates", "addressBarPolling", "autoCopy", "sensitiveDetection", "sensitiveExpiry", THEME_STORAGE_KEY]);
+  const data = await chrome.storage.local.get(["folders", "templates", "autoCopy", "sensitiveDetection", "sensitiveExpiry", THEME_STORAGE_KEY]);
   folders = data.folders || [];
   templates = data.templates || [];
   renderFolders();
@@ -162,12 +162,6 @@ async function loadClips() {
   autoCopyToggle.checked = data.autoCopy === true;
   autoCopyToggle.addEventListener("change", async () => {
     await chrome.storage.local.set({ autoCopy: autoCopyToggle.checked });
-  });
-
-  const toggle = document.getElementById("addressBarPollingToggle");
-  toggle.checked = data.addressBarPolling === true;
-  toggle.addEventListener("change", async () => {
-    await chrome.storage.local.set({ addressBarPolling: toggle.checked });
   });
 
   // Sync & history limit settings (synced across devices)
@@ -209,10 +203,6 @@ async function loadClips() {
   sensitiveExpirySelect.value = String(data.sensitiveExpiry ?? 5);
   sensitiveExpirySelect.addEventListener("change", async () => {
     await chrome.storage.local.set({ sensitiveExpiry: Number(sensitiveExpirySelect.value) });
-  });
-  toggle.checked = data.addressBarPolling === true;
-  toggle.addEventListener("change", async () => {
-    await chrome.storage.local.set({ addressBarPolling: toggle.checked });
   });
 
   // Show the real shortcut assigned to _execute_action

@@ -268,10 +268,6 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
         }
       }
     }
-    if (changes.addressBarPolling) {
-      if (changes.addressBarPolling.newValue) ensureOffscreenDocument();
-      else closeOffscreenDocument();
-    }
   }
   if (area === "sync") {
     const hasClipChanges = Object.keys(changes).some(
@@ -297,35 +293,6 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
     }
   }
 });
-
-// ===== Offscreen document for clipboard polling =====
-async function ensureOffscreenDocument() {
-  const { addressBarPolling = false } = await chrome.storage.local.get("addressBarPolling");
-  if (!addressBarPolling) return;
-
-  const existingContexts = await chrome.runtime.getContexts({
-    contextTypes: ["OFFSCREEN_DOCUMENT"],
-    documentUrls: [chrome.runtime.getURL("offscreen/offscreen.html")]
-  });
-  if (existingContexts.length > 0) return;
-
-  await chrome.offscreen.createDocument({
-    url: "offscreen/offscreen.html",
-    reasons: ["CLIPBOARD"],
-    justification: "Poll clipboard for changes from browser UI (e.g. address bar)"
-  });
-}
-
-async function closeOffscreenDocument() {
-  const existingContexts = await chrome.runtime.getContexts({
-    contextTypes: ["OFFSCREEN_DOCUMENT"],
-    documentUrls: [chrome.runtime.getURL("offscreen/offscreen.html")]
-  });
-  if (existingContexts.length === 0) return;
-  await chrome.offscreen.closeDocument();
-}
-
-ensureOffscreenDocument();
 
 // ===== Sensitive clip auto-expiry =====
 async function cleanupExpiredClips() {
