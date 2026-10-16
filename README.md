@@ -134,4 +134,6 @@ If this saved you time or you just like it, consider buying me a coffee:
 
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-ffdd00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/dirtymasterchief)
 
+Explore more tools and projects by IT aan Huys: [itaanhuys.com](https://itaanhuys.com/en/projects?utm_source=cliphive&utm_medium=readme).
+
 ---

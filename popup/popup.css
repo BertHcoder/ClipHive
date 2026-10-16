@@ -979,8 +979,14 @@ body.settings-only-view .clip-list {
   background: #FFF5F5;
 }
 
-.footer-support-link {
-  align-self: center;
+.footer-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.footer-link {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -991,12 +997,12 @@ body.settings-only-view .clip-list {
   transition: color 0.15s, opacity 0.15s;
 }
 
-.footer-support-icon {
+.footer-link-icon {
   flex-shrink: 0;
   opacity: 0.9;
 }
 
-.footer-support-link:hover {
+.footer-link:hover {
   color: var(--text-muted);
   opacity: 1;
 }
