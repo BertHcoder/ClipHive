@@ -3,7 +3,7 @@
 # Example: Set-Location e:\repos; .\ClipHive\PACKAGE_EXTENSION.ps1
 
 param(
-    [string]$Version = "1.0.0",
+    [string]$Version = "1.0.1",
     [string]$OutputDir = "."
 )
 
@@ -27,7 +27,6 @@ $ItemsToZip = @(
     "background",
     "content",
     "icons",
-    "offscreen",
     "popup",
     "utils"
 )
