@@ -87,6 +87,18 @@ See [PRIVACY_POLICY.md](PRIVACY_POLICY.md) for full details.
 3. Test with the [manual test checklist](#manual-testing)
 4. Open a PR
 
+### Automated Tests
+
+With Node.js 22 or later, run:
+
+```sh
+node --test tests/clipboard.test.cjs
+```
+
+The suite loads the production content scripts in manifest order with mocked Chrome and DOM APIs. It covers website copy capture, input/textarea copy-and-paste round trips, plain/rich contenteditable paste, pause, duplicates, sensitive content, history limits, and auto-copy. GitHub Actions runs it on pushes and pull requests.
+
+These tests do not exercise Chrome's real system clipboard or extension permissions. Keep the browser smoke tests below for release verification.
+
 ### Manual Testing
 
 - [ ] Copy text on a page → appears in popup
