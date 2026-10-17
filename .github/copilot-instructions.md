@@ -68,6 +68,13 @@ When adding new message types:
 - Avoid introducing dependencies unless clearly necessary.
 - Add concise comments only for non-obvious logic.
 
+## Required clipboard regression tests
+- After changes affecting copy capture, auto-copy, clipboard writes, paste-back, selection/focus handling, or their settings and message payloads, run `node --test tests/clipboard.test.cjs` from the repository root before finalizing.
+- This requirement includes relevant changes in `content/content.js`, `popup/popup.js`, `background/service-worker.js`, `utils/constants.js`, and `manifest.json` (permissions or content-script registration/order), as well as changes to the regression suite itself.
+- Use Node.js 22 or later. Fix failures caused by your changes and rerun the suite; do not skip or weaken tests to obtain a passing result.
+- Report the test result in your final response. If execution is blocked, state the blocker and that the tests were not run; do not claim verification.
+- The suite mocks Chrome and DOM APIs. It does not replace the manual Chrome checks below for real clipboard behavior or extension permissions.
+
 ## Change checklist for Copilot
 Before finalizing a change:
 1. Confirm `manifest.json` permissions remain minimal.
