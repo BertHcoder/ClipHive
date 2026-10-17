@@ -142,16 +142,20 @@ document.addEventListener("mouseup", () => {
 });
 
 // Listen for copy events on the page and store directly
-document.addEventListener("copy", () => {
-  const selection = document.getSelection();
-  if (!selection) return;
+document.addEventListener("copy", (event) => {
+  const target = isEditable(event.target) ? event.target : document.activeElement;
+  const isTextControl = target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA");
+  if (isTextControl && target.type === "password") return;
 
-  const text = selection.toString();
+  const selection = document.getSelection();
+  const text = isTextControl && target.selectionStart != null
+    ? target.value.slice(target.selectionStart, target.selectionEnd)
+    : selection?.toString();
   if (!text?.trim()) return;
 
   // Capture HTML content if available
   let html = "";
-  if (selection.rangeCount > 0) {
+  if (!isTextControl && selection?.rangeCount > 0) {
     const container = document.createElement("div");
     for (let i = 0; i < selection.rangeCount; i++) {
       container.appendChild(selection.getRangeAt(i).cloneContents());
@@ -195,4 +199,4 @@ document.addEventListener("copy", () => {
       console.warn('[ClipHive] Storage write failed:', err.message);
     });
   });
-});
+}, true);

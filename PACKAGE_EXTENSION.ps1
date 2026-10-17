@@ -3,7 +3,7 @@
 # Example: Set-Location e:\repos; .\ClipHive\PACKAGE_EXTENSION.ps1
 
 param(
-    [string]$Version = "1.0.1",
+    [string]$Version = "1.0.2",
     [string]$OutputDir = "."
 )
 
